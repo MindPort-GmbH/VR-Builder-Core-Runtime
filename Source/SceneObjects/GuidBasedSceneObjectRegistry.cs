@@ -158,7 +158,11 @@ namespace VRBuilder.Core.SceneObjects
             }
 
             IEnumerable<ISceneObject> sceneObjects = GetObjects(obj.Guid);
+#if UNITY_6000_5_OR_NEWER
+            return sceneObjects.Select(so => so.GameObject.GetEntityId()).Contains(obj.GameObject.GetEntityId()) == false;
+#else
             return sceneObjects.Select(so => so.GameObject.GetInstanceID()).Contains(obj.GameObject.GetInstanceID()) == false;
+#endif
         }
 
         private void RegisterGuid(ISceneObject sceneObject, Guid guid)
