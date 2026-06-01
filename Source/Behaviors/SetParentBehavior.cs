@@ -14,7 +14,7 @@ namespace VRBuilder.Core.Behaviors
     /// This behavior changes the parent of a game object in the scene hierarchy. It can accept a null parent, in which case the object will be unparented.
     /// </summary>
     [DataContract(IsReference = true)]
-    [HelpLink("https://www.mindport.co/vr-builder/manual/default-behaviors/set-parent")]
+    [HelpLink("https://mindport-gmbh.github.io/VR-Builder-Documentation/articles/core/set-parent-behavior.html?utm_source=unity_editor&utm_medium=referral&utm_campaign=from_unity&utm_id=from_unity")]
     public class SetParentBehavior : Behavior<SetParentBehavior.EntityData>
     {
         [DisplayName("Set Parent")]

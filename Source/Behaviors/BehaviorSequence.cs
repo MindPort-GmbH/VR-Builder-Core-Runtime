@@ -15,7 +15,7 @@ namespace VRBuilder.Core.Behaviors
     /// A collection of behaviors that are activated and deactivated after each other.
     /// </summary>
     [DataContract(IsReference = true)]
-    [HelpLink("https://www.mindport.co/vr-builder/manual/default-behaviors/behavior-sequence")]
+    [HelpLink("https://mindport-gmbh.github.io/VR-Builder-Documentation/articles/core/behavior-sequence-behavior.html?utm_source=unity_editor&utm_medium=referral&utm_campaign=from_unity&utm_id=from_unity")]
     public class BehaviorSequence : Behavior<BehaviorSequence.EntityData>
     {
         /// <summary>

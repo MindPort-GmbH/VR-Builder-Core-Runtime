@@ -17,7 +17,7 @@ namespace VRBuilder.Core.Conditions
     /// Condition which is completed when `TargetObject` gets inside `TriggerProperty`'s collider.
     /// </summary>
     [DataContract(IsReference = true)]
-    [HelpLink("https://www.mindport.co/vr-builder/manual/default-conditions/move-object-in-collider")]
+    [HelpLink("https://mindport-gmbh.github.io/VR-Builder-Documentation/articles/core/objects-in-collider-condition.html?utm_source=unity_editor&utm_medium=referral&utm_campaign=from_unity&utm_id=from_unity")]
     public class ObjectInColliderCondition : Condition<ObjectInColliderCondition.EntityData>
     {
         /// <summary>

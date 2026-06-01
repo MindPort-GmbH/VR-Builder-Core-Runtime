@@ -13,6 +13,7 @@ namespace VRBuilder.Core.Behaviors
     /// Behavior that start/stops a particle system property.
     /// </summary>
     [DataContract(IsReference = true)]
+    [HelpLink("https://mindport-gmbh.github.io/VR-Builder-Documentation/articles/core/start-particle-emission-behavior.html?utm_source=unity_editor&utm_medium=referral&utm_campaign=from_unity&utm_id=from_unity")]
     public class ControlParticleEmissionBehavior : Behavior<ControlParticleEmissionBehavior.EntityData>
     {
         /// <summary>

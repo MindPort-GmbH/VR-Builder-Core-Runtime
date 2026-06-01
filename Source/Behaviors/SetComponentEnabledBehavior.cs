@@ -12,7 +12,7 @@ namespace VRBuilder.Core.Behaviors
     /// Enables/disables all components of a given type on a given game object.
     /// </summary>
     [DataContract(IsReference = true)]
-    [HelpLink("https://www.mindport.co/vr-builder/manual/default-behaviors/enable-object")]
+    [HelpLink("https://mindport-gmbh.github.io/VR-Builder-Documentation/articles/core/enable-components-behavior.html?utm_source=unity_editor&utm_medium=referral&utm_campaign=from_unity&utm_id=from_unity")]
     public class SetComponentEnabledBehavior : Behavior<SetComponentEnabledBehavior.EntityData>
     {
         /// <summary>

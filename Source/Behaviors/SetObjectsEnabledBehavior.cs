@@ -12,6 +12,7 @@ namespace VRBuilder.Core.Behaviors
     /// Sets enabled or disabled all specified objects.
     /// </summary>
     [DataContract(IsReference = true)]
+    [HelpLink("https://mindport-gmbh.github.io/VR-Builder-Documentation/articles/core/enable-objects-behavior.html?utm_source=unity_editor&utm_medium=referral&utm_campaign=from_unity&utm_id=from_unity")]
     public class SetObjectsEnabledBehavior : Behavior<SetObjectsEnabledBehavior.EntityData>
     {
         /// <summary>

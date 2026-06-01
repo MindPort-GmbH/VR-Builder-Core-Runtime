@@ -10,7 +10,7 @@ namespace VRBuilder.Core.Conditions
     /// A condition that completes when a certain amount of time has passed.
     /// </summary>
     [DataContract(IsReference = true)]
-    [HelpLink("https://www.mindport.co/vr-builder/manual/default-conditions/timeout-condition")]
+    [HelpLink("https://mindport-gmbh.github.io/VR-Builder-Documentation/articles/core/timeout-condition.html?utm_source=unity_editor&utm_medium=referral&utm_campaign=from_unity&utm_id=from_unity")]
     public class TimeoutCondition : Condition<TimeoutCondition.EntityData>
     {
         /// <summary>
