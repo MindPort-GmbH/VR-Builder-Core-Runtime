@@ -8,6 +8,11 @@ namespace VRBuilder.UI.Console
     public interface ILogConsole
     {
         /// <summary>
+        /// True if the console is currently visible.
+        /// </summary>
+        bool IsVisible { get; }
+
+        /// <summary>
         /// Add the provided message to the log.
         /// </summary>
         /// <param name="message">Main message.</param>
@@ -29,6 +34,11 @@ namespace VRBuilder.UI.Console
         /// Hides the console.
         /// </summary>
         void Hide();
+
+        /// <summary>
+        /// Toggles the console between visible and hidden.
+        /// </summary>
+        void Toggle();
 
         /// <summary>
         /// Manually sets the console dirty, so it knows it has to be refreshed.
