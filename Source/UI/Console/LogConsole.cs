@@ -25,6 +25,13 @@ namespace VRBuilder.UI.Console
 
         private List<LogMessage> logs = new List<LogMessage>();
         private ListView listView;
+
+        private VisualElement detailPane;
+        private Label detailIcon;
+        private Label detailTitle;
+        private Label detailMessage;
+        private Label detailStack;
+
         private bool isDirty = false;
 
         /// <summary>
@@ -58,6 +65,7 @@ namespace VRBuilder.UI.Console
         public void Clear()
         {
             logs.Clear();
+            CloseDetail();
             RefreshList();
         }
 
@@ -87,6 +95,7 @@ namespace VRBuilder.UI.Console
             }
 
             listView = null;
+            detailPane = null;
         }
 
         /// <inheritdoc/>
@@ -131,7 +140,16 @@ namespace VRBuilder.UI.Console
                 listView.makeItem = () => logItemTemplate.CloneTree();
                 listView.bindItem = BindItem;
                 listView.itemsSource = logs;
+                listView.selectionChanged -= OnLogSelected;
+                listView.selectionChanged += OnLogSelected;
             }
+
+            detailPane = root.Q<VisualElement>("DetailPane");
+            detailIcon = root.Q<Label>("DetailIcon");
+            detailTitle = root.Q<Label>("DetailTitle");
+            detailMessage = root.Q<Label>("DetailMessage");
+            detailStack = root.Q<Label>("DetailStack");
+            CloseDetail();
 
             Button closeButton = root.Q<Button>("CloseButton");
 
@@ -148,11 +166,21 @@ namespace VRBuilder.UI.Console
                 clearButton.clicked -= Clear;
                 clearButton.clicked += Clear;
             }
+
+            Button detailBack = root.Q<Button>("DetailBack");
+
+            if (detailBack != null)
+            {
+                detailBack.clicked -= CloseDetail;
+                detailBack.clicked += CloseDetail;
+            }
         }
 
         private void BindItem(VisualElement element, int index)
         {
             LogMessage log = logs[index];
+
+            ApplyRowSeverity(element, log.LogType);
 
             Label message = element.Q<Label>("Message");
 
@@ -165,12 +193,84 @@ namespace VRBuilder.UI.Console
 
             if (icon != null)
             {
-                bool isError = log.LogType == LogType.Error || log.LogType == LogType.Exception || log.LogType == LogType.Assert;
-                icon.EnableInClassList("console-icon--log", log.LogType == LogType.Log);
-                icon.EnableInClassList("console-icon--warning", log.LogType == LogType.Warning);
-                icon.EnableInClassList("console-icon--error", isError);
-                icon.text = log.LogType == LogType.Warning ? "!" : log.LogType == LogType.Log ? "i" : "✕";
+                ApplyIcon(icon, log.LogType);
             }
+        }
+
+        private void OnLogSelected(IEnumerable<object> selection)
+        {
+            if (listView == null)
+            {
+                return;
+            }
+
+            int index = listView.selectedIndex;
+
+            if (index < 0 || index >= logs.Count)
+            {
+                CloseDetail();
+                return;
+            }
+
+            ShowDetail(logs[index]);
+        }
+
+        private void ShowDetail(LogMessage log)
+        {
+            if (detailPane == null)
+            {
+                return;
+            }
+
+            if (detailMessage != null)
+            {
+                detailMessage.text = log.Message;
+            }
+
+            if (detailStack != null)
+            {
+                detailStack.text = log.Details;
+                detailStack.style.display = string.IsNullOrEmpty(log.Details) ? DisplayStyle.None : DisplayStyle.Flex;
+            }
+
+            if (detailTitle != null)
+            {
+                detailTitle.text = log.LogType.ToString();
+            }
+
+            if (detailIcon != null)
+            {
+                ApplyIcon(detailIcon, log.LogType);
+            }
+
+            detailPane.RemoveFromClassList("console-detail--hidden");
+        }
+
+        private void CloseDetail()
+        {
+            detailPane?.AddToClassList("console-detail--hidden");
+
+            if (listView != null && listView.selectedIndex >= 0)
+            {
+                listView.ClearSelection();
+            }
+        }
+
+        private static void ApplyIcon(Label icon, LogType logType)
+        {
+            bool isError = logType == LogType.Error || logType == LogType.Exception || logType == LogType.Assert;
+            icon.EnableInClassList("console-icon--log", logType == LogType.Log);
+            icon.EnableInClassList("console-icon--warning", logType == LogType.Warning);
+            icon.EnableInClassList("console-icon--error", isError);
+            icon.text = logType == LogType.Warning ? "!" : logType == LogType.Log ? "i" : "✕";
+        }
+
+        private static void ApplyRowSeverity(VisualElement row, LogType logType)
+        {
+            bool isError = logType == LogType.Error || logType == LogType.Exception || logType == LogType.Assert;
+            row.EnableInClassList("console-row--log", logType == LogType.Log);
+            row.EnableInClassList("console-row--warning", logType == LogType.Warning);
+            row.EnableInClassList("console-row--error", isError);
         }
 
         private void RefreshList()

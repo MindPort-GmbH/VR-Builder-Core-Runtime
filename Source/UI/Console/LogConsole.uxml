@@ -7,6 +7,19 @@
             <ui:Button text="Clear" name="ClearButton" class="console-clear" />
             <ui:Button text="✕" name="CloseButton" class="console-close" />
         </ui:VisualElement>
-        <ui:ListView name="LogList" class="console-list" virtualization-method="DynamicHeight" show-alternating-row-backgrounds="ContentOnly" />
+        <ui:VisualElement name="Body" class="console-body">
+            <ui:ListView name="LogList" class="console-list" virtualization-method="DynamicHeight" show-alternating-row-backgrounds="ContentOnly" />
+            <ui:VisualElement name="DetailPane" class="console-detail console-detail--hidden">
+                <ui:VisualElement name="DetailHeader" class="console-detail__header">
+                    <ui:Label text="i" name="DetailIcon" class="console-icon console-icon--log" />
+                    <ui:Label text="Details" name="DetailTitle" class="console-detail__title" />
+                    <ui:Button text="✕" name="DetailBack" class="console-detail__back" />
+                </ui:VisualElement>
+                <ui:ScrollView name="DetailScroll" class="console-detail__scroll">
+                    <ui:Label name="DetailMessage" class="console-detail__message" />
+                    <ui:Label name="DetailStack" class="console-detail__stack" />
+                </ui:ScrollView>
+            </ui:VisualElement>
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>
