@@ -312,7 +312,6 @@ namespace VRBuilder.Core
         {
             string path = EntityPathUtils.BuildRichTextEntityPath(Owner);
             Debug.LogError($"Exception at {path} while <b>{Stage} ({function})</b>\n{exception}");
-            VRBConsole.LogError($"Exception at {path} while <b>{Stage} ({function})</b>\n{exception}");
         }
     }
 }
