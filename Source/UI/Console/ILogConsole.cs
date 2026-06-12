@@ -1,5 +1,3 @@
-using UnityEngine;
-
 namespace VRBuilder.UI.Console
 {
     /// <summary>
@@ -17,8 +15,8 @@ namespace VRBuilder.UI.Console
         /// </summary>
         /// <param name="message">Main message.</param>
         /// <param name="details">Extra details, e.g. stack trace.</param>
-        /// <param name="logType">Type of message logged.</param>
-        void LogMessage(string message, string details, LogType logType);
+        /// <param name="severity">Severity of the message logged.</param>
+        void LogMessage(string message, string details, LogSeverity severity);
 
         /// <summary>
         /// Clears the console of all messages.

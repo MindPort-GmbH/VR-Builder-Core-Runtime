@@ -61,7 +61,7 @@ namespace VRBuilder.Core.Utils
         /// <param name="show">If true, show the console when the message is logged.</param>
         public static void Log(string message, string details = "", bool show = false)
         {
-            Enqueue(message, details, LogType.Log, show);
+            Enqueue(message, details, LogSeverity.Log, show);
         }
 
         /// <summary>
@@ -72,7 +72,7 @@ namespace VRBuilder.Core.Utils
         /// <param name="show">If true, show the console when the message is logged.</param>
         public static void LogWarning(string message, string details = "", bool show = false)
         {
-            Enqueue(message, details, LogType.Warning, show);
+            Enqueue(message, details, LogSeverity.Warning, show);
         }
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace VRBuilder.Core.Utils
         /// <param name="show">If true, show the console when the message is logged.</param>
         public static void LogError(string message, string details = "", bool show = true)
         {
-            Enqueue(message, details, LogType.Error, show);
+            Enqueue(message, details, LogSeverity.Error, show);
         }
 
         /// <summary>
@@ -93,7 +93,7 @@ namespace VRBuilder.Core.Utils
         /// <param name="show">If true, show the console when the message is logged.</param>
         public static void LogException(Exception ex, bool show = true)
         {
-            Enqueue(ex.Message, ex.StackTrace, LogType.Exception, show);
+            Enqueue(ex.Message, ex.StackTrace, LogSeverity.Exception, show);
         }
 
         /// <summary>
@@ -136,13 +136,13 @@ namespace VRBuilder.Core.Utils
             target.SetDirty();
         }
 
-        private static void Enqueue(string message, string details, LogType logType, bool show)
+        private static void Enqueue(string message, string details, LogSeverity severity, bool show)
         {
             lock (executionQueue)
             {
                 executionQueue.Enqueue(() =>
                 {
-                    console.LogMessage(message, details, logType);
+                    console.LogMessage(message, details, severity);
 
                     if (show)
                     {
