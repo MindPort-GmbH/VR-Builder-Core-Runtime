@@ -3,7 +3,7 @@ using UnityEngine;
 namespace VRBuilder.UI.Console
 {
     /// <summary>
-    /// A message logged in a <see cref="LogConsole"/>.
+    /// A message logged in an <see cref="ILogConsole"/>.
     /// </summary>
     public struct LogMessage
     {
