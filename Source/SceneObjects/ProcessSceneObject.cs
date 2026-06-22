@@ -425,7 +425,26 @@ namespace VRBuilder.Core.SceneObjects
         /// </summary>
         private ISceneObjectProperty FindProperty(Type type)
         {
-            return GetComponent(type) as ISceneObjectProperty;
+            if (type == null)
+            {
+                return null;
+            }
+
+            ISceneObjectProperty property = GetComponent(type) as ISceneObjectProperty;
+            if (property != null)
+            {
+                return property;
+            }
+
+            foreach (Component component in GetComponents<Component>())
+            {
+                if (component is ISceneObjectProperty sceneObjectProperty && type.IsAssignableFrom(sceneObjectProperty.GetType()))
+                {
+                    return sceneObjectProperty;
+                }
+            }
+
+            return null;
         }
 
         /// <inheritdoc />

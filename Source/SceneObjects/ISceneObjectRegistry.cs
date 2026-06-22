@@ -11,6 +11,11 @@ namespace VRBuilder.Core.SceneObjects
     public interface ISceneObjectRegistry
     {
         /// <summary>
+        /// Raised when registered scene objects or their group membership changes.
+        /// </summary>
+        event Action Changed;
+
+        /// <summary>
         /// Returns if the Guid is registered in the registry.
         /// </summary>
         bool ContainsGuid(Guid guid);

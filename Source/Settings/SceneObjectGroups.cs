@@ -15,6 +15,11 @@ namespace VRBuilder.Core.Settings
         public const string UniqueGuidName = "[Object ID]";
         public const string GuidNotRegisteredText = "[<i>Missing Group</i>]";
 
+        /// <summary>
+        /// Raised when groups are created, removed, or renamed.
+        /// </summary>
+        public event Action Changed;
+
         [Serializable]
         public class SceneObjectGroup
         {
@@ -95,6 +100,7 @@ namespace VRBuilder.Core.Settings
             if (RenameGroup(group, label))
             {
                 groups.Add(group);
+                NotifyChanged();
                 return group;
             }
             else
@@ -121,7 +127,13 @@ namespace VRBuilder.Core.Settings
         /// <returns><c>true</c> if the group was successfully removed; otherwise, <c>false</c>.</returns>
         public bool RemoveGroup(Guid guid)
         {
-            return groups.RemoveAll(group => group.Guid == guid) > 0;
+            bool removed = groups.RemoveAll(group => group.Guid == guid) > 0;
+            if (removed)
+            {
+                NotifyChanged();
+            }
+
+            return removed;
         }
 
         /// <summary>
@@ -198,7 +210,13 @@ namespace VRBuilder.Core.Settings
             }
 
             group.Rename(label);
+            NotifyChanged();
             return true;
+        }
+
+        private void NotifyChanged()
+        {
+            Changed?.Invoke();
         }
     }
 }

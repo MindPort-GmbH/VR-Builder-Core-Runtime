@@ -5,7 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
+using VRBuilder.Core.Attributes;
 using VRBuilder.Core.Configuration;
 using VRBuilder.Core.Properties;
 using VRBuilder.Core.Utils;
@@ -51,8 +53,13 @@ namespace VRBuilder.Core.SceneObjects
 
             if (processProperty.IsInterface || processProperty.IsAbstract)
             {
-                // If it is an interface just take the first public found concrete implementation.
-                Type propertyType = ReflectionUtils.GetConcreteTypesAssignableFrom(processProperty).First();
+                Type propertyType = GetImplementation(processProperty);
+                if (propertyType == null)
+                {
+                    Debug.LogError($"No implementation found for {processProperty.Name}.");
+                    return null;
+                }
+
                 sceneObjectProperty = sceneObject.GameObject.AddComponent(propertyType) as ISceneObjectProperty;
             }
             else
@@ -137,19 +144,33 @@ namespace VRBuilder.Core.SceneObjects
         /// The method will attempt to find an implementation of this type with a default attribute. 
         /// If none is found, it will use the first found implementation without a default attribute.
         /// </remarks>
-        public static void SceneObjectAutomaticSetup(GameObject selectedSceneObject, Type valueType, bool excludeEditor = true)
+        public static bool SceneObjectAutomaticSetup(GameObject selectedSceneObject, Type valueType, bool excludeEditor = true)
         {
-            ISceneObject sceneObject = selectedSceneObject.GetComponent<ProcessSceneObject>() ?? selectedSceneObject.AddComponent<ProcessSceneObject>();
-            Type concreteTypeToAdd = GetImplementation(valueType, excludeEditor);
-
-            if (concreteTypeToAdd != null)
+            if (selectedSceneObject == null || valueType == null)
             {
-                sceneObject.AddProcessProperty(concreteTypeToAdd);
+                return false;
             }
-            else
+
+            ISceneObject sceneObject = selectedSceneObject.GetComponent<ProcessSceneObject>() ?? selectedSceneObject.AddComponent<ProcessSceneObject>();
+            Type concreteTypeToAdd = ResolveConcretePropertyType(valueType, excludeEditor);
+
+            if (concreteTypeToAdd == null)
             {
                 Debug.LogError($"No implementation found for {valueType.Name}.");
+                return false;
             }
+
+            return sceneObject.AddProcessProperty(concreteTypeToAdd) != null;
+        }
+
+        /// <summary>
+        /// Returns true when <see cref="SceneObjectAutomaticSetup"/> can attach the required property automatically.
+        /// </summary>
+        /// <param name="valueType">The type of the process property to add.</param>
+        /// <param name="excludeEditor">If set to <c>true</c>, types from editor assemblies are excluded.</param>
+        public static bool CanAutomaticSetup(Type valueType, bool excludeEditor = true)
+        {
+            return ResolveConcretePropertyType(valueType, excludeEditor) != null;
         }
 
         /// <summary>
@@ -167,14 +188,38 @@ namespace VRBuilder.Core.SceneObjects
         /// </remarks>
         public static Type GetImplementation(Type valueType, bool excludeEditor = true)
         {
-            Type concreteTypeToAdd = ReflectionUtils.GetImplementationWithDefaultAttribute(valueType, excludeEditor);
+            return ResolveConcretePropertyType(valueType, excludeEditor);
+        }
 
-            if (concreteTypeToAdd == null)
+        private static Type ResolveConcretePropertyType(Type valueType, bool excludeEditor = true)
+        {
+            if (valueType == null || typeof(ISceneObjectProperty).IsAssignableFrom(valueType) == false)
             {
-                concreteTypeToAdd = ReflectionUtils.GetImplementationWithoutDefaultAttribute(valueType, excludeEditor);
+                return null;
             }
 
-            return concreteTypeToAdd;
+            Type concreteTypeToAdd = ReflectionUtils.GetImplementationWithDefaultAttribute(valueType, excludeEditor);
+            if (concreteTypeToAdd != null)
+            {
+                return concreteTypeToAdd;
+            }
+
+            List<Type> implementationsWithoutDefaultAttribute = ReflectionUtils
+                .GetConcreteTypesAssignableFrom(valueType, excludeEditor)
+                .Where(type => type.GetCustomAttribute<DefaultSceneObjectPropertyAttribute>() == null)
+                .ToList();
+
+            if (implementationsWithoutDefaultAttribute.Count == 1)
+            {
+                return implementationsWithoutDefaultAttribute[0];
+            }
+
+            if (!valueType.IsAbstract && !valueType.IsInterface)
+            {
+                return valueType;
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -215,11 +260,7 @@ namespace VRBuilder.Core.SceneObjects
         /// <remarks>
         public static void RemoveProcessProperty(ISceneObject sceneObject, Type valueType, Component[] alreadyAttachedProperties)
         {
-            Type concreteTypeToRemove = ReflectionUtils.GetImplementationWithDefaultAttribute(valueType);
-            if (concreteTypeToRemove == null)
-            {
-                concreteTypeToRemove = ReflectionUtils.GetImplementationWithoutDefaultAttribute(valueType);
-            }
+            Type concreteTypeToRemove = GetImplementation(valueType);
             if (concreteTypeToRemove != null)
             {
                 sceneObject.RemoveProcessProperty(concreteTypeToRemove, true, alreadyAttachedProperties);
