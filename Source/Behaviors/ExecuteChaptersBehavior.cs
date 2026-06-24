@@ -29,6 +29,8 @@ namespace VRBuilder.Core.Behaviors
             /// SubChapters to be executed in parallel.
             /// </summary>
             [DataMember]
+            [DisplayName("Sub Chapters")]
+            [DisplayTooltip("Chapters to execute in parallel.")]
             public List<SubChapter> SubChapters { get; set; }
 
             /// <summary>
@@ -36,6 +38,8 @@ namespace VRBuilder.Core.Behaviors
             /// if all other chapters are complete.
             /// </summary>
             [DataMember]
+            [DisplayName("Is Optional Chapter")]
+            [DisplayTooltip("If true, the chapter at the same index can be interrupted once all other chapters are complete.")]
             public List<bool> IsOptionalChapter { get; set; }
 
             [IgnoreDataMember]

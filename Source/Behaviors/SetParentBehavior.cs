@@ -25,12 +25,16 @@ namespace VRBuilder.Core.Behaviors
             /// Process object to reparent.
             /// </summary>
             [DataMember]
+            [DisplayName("Target Object")]
+            [DisplayTooltip("Process object to reparent.")]
             public SingleSceneObjectReference TargetObject { get; set; }
 
             /// <summary>
             /// New parent game object.
             /// </summary>
             [DataMember]
+            [DisplayName("Parent Object")]
+            [DisplayTooltip("New parent game object. Leave empty to unparent the target object.")]
             public SingleSceneObjectReference ParentObject { get; set; }
 
             /// <summary>

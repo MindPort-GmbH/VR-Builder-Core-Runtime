@@ -33,7 +33,8 @@ namespace VRBuilder.Core.Behaviors
 
             // Duration of the animation in seconds.
             [DataMember]
-            [DisplayName("Animation Duration (in seconds)")]
+            [DisplayName("Animation Duration")]
+            [DisplayTooltip("Duration of the animation in seconds.")]
             public float Duration { get; set; }
 
             [DataMember]

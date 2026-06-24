@@ -31,13 +31,16 @@ namespace VRBuilder.Core.Behaviors
 
             /// <inheritdoc />
             [DataMember]
+            [DisplayName("Execution Stages")]
+            [DisplayTooltip("Determines whether the behavior runs when the step activates, deactivates, or both.")]
             public BehaviorExecutionStages ExecutionStages { get; set; }
 
             /// <summary>
             /// Audio volume this audio file should be played with.
             /// </summary>
             [DataMember]
-            [DisplayName("Audio Volume (from 0 to 1)")]
+            [DisplayName("Audio Volume")]
+            [DisplayTooltip("Volume from 0 to 1.")]
             [UsesSpecificProcessDrawer("NormalizedFloatDrawer")]
             public float Volume { get; set; } = 1.0f;
 

@@ -26,14 +26,20 @@ namespace VRBuilder.Core.Conditions
         {
             [DataMember]
             [HideInProcessInspector]
+            [DisplayName("Left Operand")]
+            [DisplayTooltip("Constant value or data property on the left side of the comparison.")]
             public ProcessVariableSelectableValue<T> Left;
 
             [DataMember]
             [HideInProcessInspector]
+            [DisplayName("Operator")]
+            [DisplayTooltip("Comparison applied between the left and right operands.")]
             public IOperationCommand<T, bool> Operation { get; set; }
 
             [DataMember]
             [HideInProcessInspector]
+            [DisplayName("Right Operand")]
+            [DisplayTooltip("Constant value or data property on the right side of the comparison.")]
             public ProcessVariableSelectableValue<T> Right;
 
             /// <inheritdoc />

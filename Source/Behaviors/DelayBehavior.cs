@@ -22,7 +22,8 @@ namespace VRBuilder.Core.Behaviors
         public class EntityData : IBehaviorData
         {
             [DataMember]
-            [DisplayName("Delay (in seconds)")]
+            [DisplayName("Delay")]
+            [DisplayTooltip("Delay before the behavior completes, in seconds.")]
             public float DelayTime { get; set; }
 
             public Metadata Metadata { get; set; }

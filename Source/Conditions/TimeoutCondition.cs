@@ -23,7 +23,8 @@ namespace VRBuilder.Core.Conditions
             /// The delay before the condition completes.
             /// </summary>
             [DataMember]
-            [DisplayName("Wait (in seconds)")]
+            [DisplayName("Wait")]
+            [DisplayTooltip("Delay before the condition completes, in seconds.")]
             public float Timeout { get; set; }
 
             /// <inheritdoc />

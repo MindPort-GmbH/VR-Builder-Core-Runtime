@@ -63,6 +63,8 @@ namespace VRBuilder.Core.Behaviors
 
             /// <inheritdoc />
             [DataMember]
+            [DisplayName("Execution Stages")]
+            [DisplayTooltip("Determines whether the behavior runs when the step activates, deactivates, or both.")]
             public BehaviorExecutionStages ExecutionStages { get; set; }
 
             public GameObject ConfettiMachine { get; set; }

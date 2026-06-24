@@ -45,7 +45,8 @@ namespace VRBuilder.Core.Behaviors
             /// Duration of the transition. If duration is equal or less than zero, target object movement is instantaneous.
             /// </summary>
             [DataMember]
-            [DisplayName("Animation (in seconds)")]
+            [DisplayName("Animation")]
+            [DisplayTooltip("Duration of the transition in seconds. If zero or less, movement is instantaneous.")]
             public float Duration { get; set; }
 
             [DataMember]

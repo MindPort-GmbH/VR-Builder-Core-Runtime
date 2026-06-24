@@ -27,6 +27,7 @@ namespace VRBuilder.Core.Conditions
             /// </summary>
             [DataMember]
             [DisplayName("Tracked object")]
+            [DisplayTooltip("The object whose distance to the reference is measured.")]
             public SingleSceneObjectReference TargetObject { get; set; }
 
             /// <summary>
@@ -34,12 +35,15 @@ namespace VRBuilder.Core.Conditions
             /// </summary>
             [DataMember]
             [DisplayName("Reference object")]
+            [DisplayTooltip("Reference point used to measure distance from the tracked object.")]
             public SingleScenePropertyReference<TransformInRangeDetectorProperty> ReferenceObject { get; set; }
 
             /// <summary>
             /// The required distance between two objects to trigger the condition.
             /// </summary>
             [DataMember]
+            [DisplayName("Range")]
+            [DisplayTooltip("Maximum distance in Unity units between the tracked and reference objects.")]
             public float Range { get; set; }
 
             /// <inheritdoc />
@@ -50,6 +54,7 @@ namespace VRBuilder.Core.Conditions
             /// <inheritdoc />
             [DataMember]
             [DisplayName("Required seconds inside")]
+            [DisplayTooltip("How long the tracked object must stay within range, in seconds.")]
             public float RequiredTimeInside { get; set; }
 
             /// <inheritdoc />

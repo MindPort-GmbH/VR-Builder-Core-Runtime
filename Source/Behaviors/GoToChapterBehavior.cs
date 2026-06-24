@@ -22,6 +22,8 @@ namespace VRBuilder.Core.Behaviors
         public class EntityData : IBehaviorData
         {
             [DataMember]
+            [DisplayName("Chapter")]
+            [DisplayTooltip("Chapter to jump to. The current chapter is aborted immediately.")]
             public Guid ChapterGuid { get; set; }
 
             public Metadata Metadata { get; set; }

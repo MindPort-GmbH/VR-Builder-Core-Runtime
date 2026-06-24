@@ -32,6 +32,7 @@ namespace VRBuilder.Core.Conditions
             /// </summary>
             [DataMember]
             [DisplayName("Objects")]
+            [DisplayTooltip("Objects that must enter the collider.")]
             public MultipleSceneObjectReference TargetObjects { get; set; }
 
             /// <summary>
@@ -39,7 +40,7 @@ namespace VRBuilder.Core.Conditions
             /// </summary>
             [DataMember]
             [DisplayName("Collider")]
-
+            [DisplayTooltip("Trigger collider the objects must enter.")]
             public SingleScenePropertyReference<ColliderWithTriggerProperty> TriggerObject { get; set; }
 
             /// <inheritdoc />
@@ -64,10 +65,12 @@ namespace VRBuilder.Core.Conditions
             /// <inheritdoc />
             [DataMember]
             [DisplayName("Required seconds inside")]
+            [DisplayTooltip("How long the required object count must stay inside the collider, in seconds.")]
             public float RequiredTimeInside { get; set; }
 
             [DataMember]
             [DisplayName("Required Object count")]
+            [DisplayTooltip("Number of objects that must be inside the collider at the same time.")]
             public float ObjectsRequiredInTrigger { get; set; }
 
             /// <inheritdoc />
