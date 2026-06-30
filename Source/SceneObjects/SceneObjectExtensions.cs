@@ -193,15 +193,20 @@ namespace VRBuilder.Core.SceneObjects
 
         private static Type ResolveConcretePropertyType(Type valueType, bool excludeEditor = true)
         {
-            if (valueType == null || typeof(ISceneObjectProperty).IsAssignableFrom(valueType) == false)
+            if (valueType == null)
             {
                 return null;
             }
 
             Type concreteTypeToAdd = ReflectionUtils.GetImplementationWithDefaultAttribute(valueType, excludeEditor);
-            if (concreteTypeToAdd != null)
+            if (concreteTypeToAdd != null && typeof(ISceneObjectProperty).IsAssignableFrom(concreteTypeToAdd))
             {
                 return concreteTypeToAdd;
+            }
+
+            if (typeof(ISceneObjectProperty).IsAssignableFrom(valueType) == false)
+            {
+                return null;
             }
 
             List<Type> implementationsWithoutDefaultAttribute = ReflectionUtils
