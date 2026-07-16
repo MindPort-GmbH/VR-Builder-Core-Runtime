@@ -1,0 +1,29 @@
+{
+  "displayName": "VR Builder Process Engine",
+  "name": "co.mindport.processengine",
+  "version": "1.0.0",
+  "unity": "2022.3",
+  "description": "Core Runtime of the process engine of VR Builder.",
+  "keywords": [
+    "builder",
+    "vr",
+    "core",
+    "mindport"
+  ],
+  "category": "XR",
+  "author": {
+    "name": "MindPort",
+    "email": "contact@mindport.co",
+    "url": "https://mindport.co/"
+  },
+  "documentationUrl": "https://mindport-gmbh.github.io/VR-Builder-Documentation/articles/core/introduction.html",
+  "changelogUrl": "https://github.com/MindPort-GmbH/VR-Builder-Core-Runtime/releases",
+  "_upm": {
+    "changelog": "Please refer to the changelog URL"
+  },
+  "licensesUrl": "https://github.com/MindPort-GmbH/VR-Builder?tab=Apache-2.0-1-ov-file",
+  "repository": {
+    "url": "https://github.com/MindPort-GmbH/VR-Builder-Core-Runtime",
+    "type": "git"
+  }
+}
