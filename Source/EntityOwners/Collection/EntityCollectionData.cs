@@ -13,6 +13,9 @@ namespace VRBuilder.Core.EntityOwners
     /// </summary>
     public abstract class EntityCollectionData<TEntity> : IEntityCollectionData<TEntity>, IRuntimeEntityCollectionData where TEntity : IEntity
     {
+        [NonSerialized]
+        [System.Runtime.Serialization.IgnoreDataMember]
+        [Newtonsoft.Json.JsonIgnore]
         private IEntity[] runtimeChildren;
 
         /// <inheritdoc />
