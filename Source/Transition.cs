@@ -115,9 +115,17 @@ namespace VRBuilder.Core
             ///<inheritdoc />
             protected override bool CheckIfCompleted()
             {
-                return Data.Conditions
-                    .Where(condition => Data.Mode.CheckIfSkipped(condition.GetType()) == false)
-                    .All(condition => condition.IsCompleted);
+                IEntity[] conditions = RuntimeEntityGraph.GetChildren(Data);
+                for (int i = 0; i < conditions.Length; i++)
+                {
+                    ICondition condition = (ICondition)conditions[i];
+                    if (Data.Mode.CheckIfSkipped(condition.GetType()) == false && condition.IsCompleted == false)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
             }
         }
 
@@ -130,9 +138,14 @@ namespace VRBuilder.Core
             ///<inheritdoc />
             public override void Complete()
             {
-                foreach (ICondition condition in Data.Conditions.Where(condition => Data.Mode.CheckIfSkipped(condition.GetType()) == false))
+                IEntity[] conditions = RuntimeEntityGraph.GetChildren(Data);
+                for (int i = 0; i < conditions.Length; i++)
                 {
-                    condition.Autocomplete();
+                    ICondition condition = (ICondition)conditions[i];
+                    if (Data.Mode.CheckIfSkipped(condition.GetType()) == false)
+                    {
+                        condition.Autocomplete();
+                    }
                 }
             }
         }

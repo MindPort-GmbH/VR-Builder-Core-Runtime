@@ -207,10 +207,24 @@ namespace VRBuilder.Core
             ///<inheritdoc />
             public override IEnumerator Update()
             {
-                while (Data.Transitions.Data.Transitions.Any(transition => transition.IsCompleted) == false)
+                while (HasCompletedTransition() == false)
                 {
                     yield return null;
                 }
+            }
+
+            private bool HasCompletedTransition()
+            {
+                IEntity[] transitions = RuntimeEntityGraph.GetChildren(Data.Transitions.Data);
+                for (int i = 0; i < transitions.Length; i++)
+                {
+                    if (((ITransition)transitions[i]).IsCompleted)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
 
             ///<inheritdoc />
