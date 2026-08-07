@@ -32,7 +32,7 @@ namespace VRBuilder.Core
             /// <inheritdoc />
             public IChapter FirstChapter
             {
-                get { return Chapters[0]; }
+                get { return Chapters.FirstOrDefault(); }
             }
 
             /// <inheritdoc />
