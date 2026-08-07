@@ -68,9 +68,11 @@ namespace VRBuilder.Core.Serialization
             {
                 Debug.LogError(ex.Message);
             }
-
-            // This line is required to undo the changes applied to the process.
-            wrapper.GetProcess();
+            finally
+            {
+                // This line is required to undo the changes applied to the process.
+                wrapper.GetProcess();
+            }
 
             return bytes;
         }
@@ -116,9 +118,11 @@ namespace VRBuilder.Core.Serialization
             {
                 Debug.LogError(ex.Message);
             }
-
-            // This line is required to undo the changes applied to the process.
-            wrapper.GetChapter();
+            finally
+            {
+                // This line is required to undo the changes applied to the process.
+                wrapper.GetChapter();
+            }
 
             return bytes;
         }
@@ -141,79 +145,94 @@ namespace VRBuilder.Core.Serialization
 
             public ChapterWrapper(IChapter chapter)
             {
-                // Set LastSelectedStep to null, to prevent it needlessly serializing a full step tree.
-                chapter.ChapterMetadata.LastSelectedStep = null;
+                Chapter = chapter;
 
-                Steps.AddRange(GetSteps(chapter));
-                SubChapters.AddRange(GetSubChapters(chapter));
-
-                foreach (IStep step in Steps)
-                {
-                    foreach (ITransition transition in step.Data.Transitions.Data.Transitions)
-                    {
-                        IStep targetStep = transition.Data.TargetStepReference.Entity;
-                        if (targetStep != null)
-                        {
-                            transition.Data.TargetStepReference.Set(new StepRef() { StepMetadata = new StepMetadata() { Guid = targetStep.StepMetadata.Guid } });
-                        }
-                    }
-                }
-
-                foreach (IChapter subChapter in SubChapters)
+                try
                 {
                     // Set LastSelectedStep to null, to prevent it needlessly serializing a full step tree.
-                    subChapter.ChapterMetadata.LastSelectedStep = null;
+                    ClearLastSelectedStep(chapter);
 
-                    List<IStep> stepRefs = new List<IStep>();
-                    foreach (IStep step in subChapter.Data.Steps)
+                    Steps.AddRange(GetSteps(chapter));
+                    SubChapters.AddRange(GetSubChapters(chapter));
+
+                    foreach (IStep step in Steps)
                     {
-                        IStep stepRef = new StepRef() { StepMetadata = new StepMetadata() { Guid = step.StepMetadata.Guid } };
-                        stepRefs.Add(stepRef);
-
-                        if (subChapter.Data.FirstStep != null && subChapter.Data.FirstStep.StepMetadata.Guid == stepRef.StepMetadata.Guid)
+                        foreach (ITransition transition in step.Data.Transitions.Data.Transitions)
                         {
-                            subChapter.Data.FirstStep = stepRef;
+                            IStep targetStep = transition.Data.TargetStepReference.Entity;
+                            if (targetStep != null)
+                            {
+                                ReplaceTargetStep(transition, new StepRef() { StepMetadata = new StepMetadata() { Guid = targetStep.StepMetadata.Guid } });
+                            }
                         }
                     }
 
-                    subChapter.Data.Steps = stepRefs;
-                }
+                    foreach (IChapter subChapter in SubChapters)
+                    {
+                        // Set LastSelectedStep to null, to prevent it needlessly serializing a full step tree.
+                        ClearLastSelectedStep(subChapter);
 
-                Chapter = chapter;
+                        List<IStep> stepRefs = new List<IStep>();
+                        foreach (IStep step in subChapter.Data.Steps)
+                        {
+                            IStep stepRef = new StepRef() { StepMetadata = new StepMetadata() { Guid = step.StepMetadata.Guid } };
+                            stepRefs.Add(stepRef);
+
+                            if (subChapter.Data.FirstStep != null && subChapter.Data.FirstStep.StepMetadata.Guid == stepRef.StepMetadata.Guid)
+                            {
+                                ReplaceFirstStep(subChapter, stepRef);
+                            }
+                        }
+
+                        ReplaceSteps(subChapter, stepRefs);
+                    }
+                }
+                catch
+                {
+                    RestoreSourceGraph();
+                    throw;
+                }
             }
 
             public IChapter GetChapter()
             {
-                foreach (IStep step in Steps)
+                try
                 {
-                    foreach (ITransition transition in step.Data.Transitions.Data.Transitions)
+                    foreach (IStep step in Steps)
                     {
-                        if (transition.Data.TargetStepReference.Entity != null && transition.Data.TargetStepReference.Entity is not StepRef)
+                        foreach (ITransition transition in step.Data.Transitions.Data.Transitions)
                         {
-                            continue;
+                            if (transition.Data.TargetStepReference.Entity != null && transition.Data.TargetStepReference.Entity is not StepRef)
+                            {
+                                continue;
+                            }
+
+                            Guid targetId = transition.Data.TargetStepReference.Id;
+                            transition.Data.TargetStepReference.Set(Steps.FirstOrDefault(candidate => candidate.Id == targetId));
+                        }
+                    }
+
+                    foreach (IChapter subChapter in SubChapters)
+                    {
+                        List<IStep> steps = new List<IStep>();
+
+                        foreach (IStep stepRef in subChapter.Data.Steps)
+                        {
+                            IStep step = Steps.FirstOrDefault(step => step.StepMetadata.Guid == stepRef.StepMetadata.Guid);
+                            steps.Add(step);
+
+                            if (subChapter.Data.FirstStep != null && subChapter.Data.FirstStep.StepMetadata.Guid == stepRef.StepMetadata.Guid)
+                            {
+                                subChapter.Data.FirstStep = step;
+                            }
                         }
 
-                        Guid targetId = transition.Data.TargetStepReference.Id;
-                        transition.Data.TargetStepReference.Set(Steps.FirstOrDefault(candidate => candidate.Id == targetId));
+                        subChapter.Data.Steps = steps;
                     }
                 }
-
-                foreach (IChapter subChapter in SubChapters)
+                finally
                 {
-                    List<IStep> steps = new List<IStep>();
-
-                    foreach (IStep stepRef in subChapter.Data.Steps)
-                    {
-                        IStep step = Steps.FirstOrDefault(step => step.StepMetadata.Guid == stepRef.StepMetadata.Guid);
-                        steps.Add(step);
-
-                        if (subChapter.Data.FirstStep != null && subChapter.Data.FirstStep.StepMetadata.Guid == stepRef.StepMetadata.Guid)
-                        {
-                            subChapter.Data.FirstStep = step;
-                        }
-                    }
-
-                    subChapter.Data.Steps = steps;
+                    RestoreSourceGraph();
                 }
 
                 return Chapter;
@@ -238,82 +257,97 @@ namespace VRBuilder.Core.Serialization
 
             public ProcessWrapper(IProcess process)
             {
-                foreach (IChapter chapter in process.Data.Chapters)
-                {
-                    // Set LastSelectedStep to null, to prevent it needlessly serializing a full step tree.
-                    chapter.ChapterMetadata.LastSelectedStep = null;
-
-                    Steps.AddRange(GetSteps(chapter));
-                    SubChapters.AddRange(GetSubChapters(chapter));
-                }
-
-                foreach (IStep step in Steps)
-                {
-                    foreach (ITransition transition in step.Data.Transitions.Data.Transitions)
-                    {
-                        IStep targetStep = transition.Data.TargetStepReference.Entity;
-                        if (targetStep != null)
-                        {
-                            transition.Data.TargetStepReference.Set(new StepRef() { StepMetadata = new StepMetadata() { Guid = targetStep.StepMetadata.Guid } });
-                        }
-                    }
-                }
-
-                foreach (IChapter subChapter in SubChapters)
-                {
-                    // Set LastSelectedStep to null, to prevent it needlessly serializing a full step tree.
-                    subChapter.ChapterMetadata.LastSelectedStep = null;
-
-                    List<IStep> stepRefs = new List<IStep>();
-                    foreach (IStep step in subChapter.Data.Steps)
-                    {
-                        IStep stepRef = new StepRef() { StepMetadata = new StepMetadata() { Guid = step.StepMetadata.Guid } };
-                        stepRefs.Add(stepRef);
-
-                        if (subChapter.Data.FirstStep != null && subChapter.Data.FirstStep.StepMetadata.Guid == stepRef.StepMetadata.Guid)
-                        {
-                            subChapter.Data.FirstStep = stepRef;
-                        }
-                    }
-
-                    subChapter.Data.Steps = stepRefs;
-                }
-
                 Process = process;
+
+                try
+                {
+                    foreach (IChapter chapter in process.Data.Chapters)
+                    {
+                        // Set LastSelectedStep to null, to prevent it needlessly serializing a full step tree.
+                        ClearLastSelectedStep(chapter);
+
+                        Steps.AddRange(GetSteps(chapter));
+                        SubChapters.AddRange(GetSubChapters(chapter));
+                    }
+
+                    foreach (IStep step in Steps)
+                    {
+                        foreach (ITransition transition in step.Data.Transitions.Data.Transitions)
+                        {
+                            IStep targetStep = transition.Data.TargetStepReference.Entity;
+                            if (targetStep != null)
+                            {
+                                ReplaceTargetStep(transition, new StepRef() { StepMetadata = new StepMetadata() { Guid = targetStep.StepMetadata.Guid } });
+                            }
+                        }
+                    }
+
+                    foreach (IChapter subChapter in SubChapters)
+                    {
+                        // Set LastSelectedStep to null, to prevent it needlessly serializing a full step tree.
+                        ClearLastSelectedStep(subChapter);
+
+                        List<IStep> stepRefs = new List<IStep>();
+                        foreach (IStep step in subChapter.Data.Steps)
+                        {
+                            IStep stepRef = new StepRef() { StepMetadata = new StepMetadata() { Guid = step.StepMetadata.Guid } };
+                            stepRefs.Add(stepRef);
+
+                            if (subChapter.Data.FirstStep != null && subChapter.Data.FirstStep.StepMetadata.Guid == stepRef.StepMetadata.Guid)
+                            {
+                                ReplaceFirstStep(subChapter, stepRef);
+                            }
+                        }
+
+                        ReplaceSteps(subChapter, stepRefs);
+                    }
+                }
+                catch
+                {
+                    RestoreSourceGraph();
+                    throw;
+                }
             }
 
             public IProcess GetProcess()
             {
-                foreach (IStep step in Steps)
+                try
                 {
-                    foreach (ITransition transition in step.Data.Transitions.Data.Transitions)
+                    foreach (IStep step in Steps)
                     {
-                        if (transition.Data.TargetStepReference.Entity != null && transition.Data.TargetStepReference.Entity is not StepRef)
+                        foreach (ITransition transition in step.Data.Transitions.Data.Transitions)
                         {
-                            continue;
+                            if (transition.Data.TargetStepReference.Entity != null && transition.Data.TargetStepReference.Entity is not StepRef)
+                            {
+                                continue;
+                            }
+
+                            Guid targetId = transition.Data.TargetStepReference.Id;
+                            transition.Data.TargetStepReference.Set(Steps.FirstOrDefault(candidate => candidate.Id == targetId));
+                        }
+                    }
+
+                    foreach (IChapter subChapter in SubChapters)
+                    {
+                        List<IStep> steps = new List<IStep>();
+
+                        foreach (IStep stepRef in subChapter.Data.Steps)
+                        {
+                            IStep step = Steps.FirstOrDefault(step => step.StepMetadata.Guid == stepRef.StepMetadata.Guid);
+                            steps.Add(step);
+
+                            if (subChapter.Data.FirstStep != null && subChapter.Data.FirstStep.StepMetadata.Guid == stepRef.StepMetadata.Guid)
+                            {
+                                subChapter.Data.FirstStep = step;
+                            }
                         }
 
-                        Guid targetId = transition.Data.TargetStepReference.Id;
-                        transition.Data.TargetStepReference.Set(Steps.FirstOrDefault(candidate => candidate.Id == targetId));
+                        subChapter.Data.Steps = steps;
                     }
                 }
-
-                foreach (IChapter subChapter in SubChapters)
+                finally
                 {
-                    List<IStep> steps = new List<IStep>();
-
-                    foreach (IStep stepRef in subChapter.Data.Steps)
-                    {
-                        IStep step = Steps.FirstOrDefault(step => step.StepMetadata.Guid == stepRef.StepMetadata.Guid);
-                        steps.Add(step);
-
-                        if (subChapter.Data.FirstStep != null && subChapter.Data.FirstStep.StepMetadata.Guid == stepRef.StepMetadata.Guid)
-                        {
-                            subChapter.Data.FirstStep = step;
-                        }
-                    }
-
-                    subChapter.Data.Steps = steps;
+                    RestoreSourceGraph();
                 }
 
                 return Process;
@@ -322,6 +356,45 @@ namespace VRBuilder.Core.Serialization
 
         private class Wrapper
         {
+            [JsonIgnore]
+            private readonly Stack<Action> restorations = new Stack<Action>();
+
+            protected void ClearLastSelectedStep(IChapter chapter)
+            {
+                IStep originalStep = chapter.ChapterMetadata.LastSelectedStep;
+                restorations.Push(() => chapter.ChapterMetadata.LastSelectedStep = originalStep);
+                chapter.ChapterMetadata.LastSelectedStep = null;
+            }
+
+            protected void ReplaceTargetStep(ITransition transition, IStep replacement)
+            {
+                IStep originalStep = transition.Data.TargetStepReference.Entity;
+                restorations.Push(() => transition.Data.TargetStepReference.Set(originalStep));
+                transition.Data.TargetStepReference.Set(replacement);
+            }
+
+            protected void ReplaceFirstStep(IChapter chapter, IStep replacement)
+            {
+                IStep originalStep = chapter.Data.FirstStep;
+                restorations.Push(() => chapter.Data.FirstStep = originalStep);
+                chapter.Data.FirstStep = replacement;
+            }
+
+            protected void ReplaceSteps(IChapter chapter, IList<IStep> replacements)
+            {
+                IList<IStep> originalSteps = chapter.Data.Steps;
+                restorations.Push(() => chapter.Data.Steps = originalSteps);
+                chapter.Data.Steps = replacements;
+            }
+
+            protected void RestoreSourceGraph()
+            {
+                while (restorations.Count > 0)
+                {
+                    restorations.Pop().Invoke();
+                }
+            }
+
             protected IEnumerable<IStep> GetSteps(IChapter chapter)
             {
                 List<IStep> steps = new List<IStep>();
