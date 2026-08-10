@@ -81,7 +81,7 @@ namespace VRBuilder.Core
         {
             BehaviorCollection clonedBehaviorCollection = new BehaviorCollection();
             clonedBehaviorCollection.Data.Behaviors = Data.Behaviors.Select(behavior => behavior.Clone()).ToList();
-            EntityCopyUtils.FinalizeCopy(this, clonedBehaviorCollection);
+            FinalizeCopy(this, clonedBehaviorCollection);
             return clonedBehaviorCollection;
         }
 

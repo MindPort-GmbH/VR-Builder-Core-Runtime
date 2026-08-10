@@ -215,7 +215,7 @@ namespace VRBuilder.Core.Behaviors
         {
             ExecuteChaptersBehavior clonedBehavior = new ExecuteChaptersBehavior();
             Data.SubChapters.ForEach(sc => clonedBehavior.Data.SubChapters.Add(new SubChapter(sc.Chapter.Clone(), sc.IsOptional)));
-            EntityCopyUtils.FinalizeCopy(this, clonedBehavior);
+            FinalizeCopy(this, clonedBehavior);
             return clonedBehavior;
         }
     }

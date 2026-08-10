@@ -238,7 +238,7 @@ namespace VRBuilder.Core.Behaviors
         public override IBehavior Clone()
         {
             BehaviorSequence clonedBehavior = new BehaviorSequence(Data.PlaysOnRepeat, Data.Behaviors.Select(behavior => behavior.Clone()).ToList(), Data.IsBlocking);
-            EntityCopyUtils.FinalizeCopy(this, clonedBehavior);
+            FinalizeCopy(this, clonedBehavior);
             return clonedBehavior;
         }
     }

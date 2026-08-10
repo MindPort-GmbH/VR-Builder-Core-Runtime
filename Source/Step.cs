@@ -305,7 +305,7 @@ namespace VRBuilder.Core
             clonedStep.Data.ToUnlock = new List<LockablePropertyReference>(Data.ToUnlock);
             clonedStep.Data.GroupsToUnlock = new Dictionary<Guid, IEnumerable<Type>>(Data.GroupsToUnlock);
 
-            EntityCopyUtils.FinalizeCopy(this, clonedStep);
+            FinalizeCopy(this, clonedStep);
 
             return clonedStep;
         }

@@ -117,7 +117,7 @@ namespace VRBuilder.Core
         {
             TransitionCollection clonedTransitionCollection = new TransitionCollection();
             clonedTransitionCollection.Data.Transitions = Data.Transitions.Select(transition => transition.Clone()).ToList();
-            EntityCopyUtils.FinalizeCopy(this, clonedTransitionCollection);
+            FinalizeCopy(this, clonedTransitionCollection);
             return clonedTransitionCollection;
         }
     }

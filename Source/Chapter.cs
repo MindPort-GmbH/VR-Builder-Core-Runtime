@@ -235,7 +235,7 @@ namespace VRBuilder.Core
                 }
             }
 
-            EntityCopyUtils.FinalizeCopy(this, clonedChapter);
+            FinalizeCopy(this, clonedChapter);
 
             return clonedChapter;
         }

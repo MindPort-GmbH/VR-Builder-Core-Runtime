@@ -93,7 +93,7 @@ namespace VRBuilder.Core.Behaviors
         public override IBehavior Clone()
         {
             GoToChapterBehavior clonedBehavior = new GoToChapterBehavior(Data.ChapterGuid);
-            EntityCopyUtils.FinalizeCopy(this, clonedBehavior);
+            FinalizeCopy(this, clonedBehavior);
             return clonedBehavior;
         }
     }

@@ -142,7 +142,7 @@ namespace VRBuilder.Core.Behaviors
         {
             ExecuteChapterBehavior clonedBehavior = new ExecuteChapterBehavior();
             clonedBehavior.Data.Chapter = Data.Chapter.Clone();
-            EntityCopyUtils.FinalizeCopy(this, clonedBehavior);
+            FinalizeCopy(this, clonedBehavior);
             return clonedBehavior;
         }
     }

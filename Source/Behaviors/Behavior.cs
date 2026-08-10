@@ -37,7 +37,7 @@ namespace VRBuilder.Core.Behaviors
         public virtual IBehavior Clone()
         {
             IBehavior clonedBehavior = MemberwiseClone() as IBehavior;
-            EntityCopyUtils.FinalizeCopy(this, clonedBehavior);
+            FinalizeCopy(this, clonedBehavior);
             return clonedBehavior;
         }
     }

@@ -134,38 +134,11 @@ namespace VRBuilder.Core
                 }
             }
         }
-    }
 
-    /// <summary>
-    /// Utilities for assigning fresh identifiers to copied entity trees.
-    /// </summary>
-    public static class EntityCopyUtils
-    {
         /// <summary>
-        /// Assigns fresh identifiers to the supplied entity and all entities it owns.
-        /// References to chapters contained in the same tree are updated to their new identifiers.
+        /// Assigns fresh identifiers to a copied entity tree and remaps references to entities contained in that tree.
         /// </summary>
-        public static void RegenerateIds(IEntity entity)
-        {
-            if (entity == null)
-            {
-                return;
-            }
-
-            IList<IEntity> entities = GetEntityTree(entity);
-            Dictionary<Guid, Guid> idMap = new Dictionary<Guid, Guid>();
-
-            foreach (IEntity child in entities)
-            {
-                Guid previousId = child.Id;
-                child.RegenerateId();
-                idMap[previousId] = child.Id;
-            }
-
-            RemapChapterReferences(entities, idMap);
-        }
-
-        internal static void FinalizeCopy(IEntity source, IEntity copy)
+        protected static void FinalizeCopy(IEntity source, IEntity copy)
         {
             if (source == null || copy == null)
             {

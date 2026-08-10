@@ -42,7 +42,7 @@ namespace VRBuilder.Core.Conditions
         public virtual ICondition Clone()
         {
             ICondition clonedCondition = MemberwiseClone() as ICondition;
-            EntityCopyUtils.FinalizeCopy(this, clonedCondition);
+            FinalizeCopy(this, clonedCondition);
             return clonedCondition;
         }
 

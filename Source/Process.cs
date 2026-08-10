@@ -167,7 +167,7 @@ namespace VRBuilder.Core
         {
             IEnumerable<IChapter> clonedChapters = Data.Chapters.Select(chapter => chapter.Clone());
             Process clonedProcess = new Process(Data.Name, clonedChapters);
-            EntityCopyUtils.FinalizeCopy(this, clonedProcess);
+            FinalizeCopy(this, clonedProcess);
             return clonedProcess;
         }
 
