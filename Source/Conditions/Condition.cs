@@ -39,14 +39,6 @@ namespace VRBuilder.Core.Conditions
         }
 
         /// <inheritdoc />
-        public virtual ICondition Clone()
-        {
-            ICondition clonedCondition = MemberwiseClone() as ICondition;
-            FinalizeCopy(this, clonedCondition);
-            return clonedCondition;
-        }
-
-        /// <inheritdoc />
         public virtual IEnumerable<LockablePropertyData> GetLockableProperties()
         {
             return PropertyReflectionHelper.ExtractLockablePropertiesFromCondition(Data);

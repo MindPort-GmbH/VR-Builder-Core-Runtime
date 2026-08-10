@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using UnityEngine.Scripting;
 using VRBuilder.Core.Attributes;
+using VRBuilder.Core.Cloning;
 
 namespace VRBuilder.Core.Behaviors
 {
@@ -12,7 +13,7 @@ namespace VRBuilder.Core.Behaviors
     /// This behavior sets the next chapter to an arbitrary chapter and immediately aborts the current chapter.
     /// </summary>
     [DataContract(IsReference = true)]
-    public class GoToChapterBehavior : Behavior<GoToChapterBehavior.EntityData>
+    public class GoToChapterBehavior : Behavior<GoToChapterBehavior.EntityData>, IEntityReferenceRemapper
     {
         /// <summary>
         /// Behavior data.
@@ -51,7 +52,7 @@ namespace VRBuilder.Core.Behaviors
             /// <inheritdoc />
             public override void Start()
             {
-                if (Data.ChapterGuid == null || Data.ChapterGuid == Guid.Empty)
+                if (Data.ChapterGuid == Guid.Empty)
                 {
                     return;
                 }
@@ -90,11 +91,14 @@ namespace VRBuilder.Core.Behaviors
         }
 
         /// <inheritdoc />
-        public override IBehavior Clone()
+        public void RemapReferencesFrom(IEntity source, IEntityCloneContext context)
         {
-            GoToChapterBehavior clonedBehavior = new GoToChapterBehavior(Data.ChapterGuid);
-            FinalizeCopy(this, clonedBehavior);
-            return clonedBehavior;
+            if (source is not GoToChapterBehavior sourceBehavior)
+            {
+                throw new ArgumentException($"Expected a source of type '{typeof(GoToChapterBehavior).FullName}'.", nameof(source));
+            }
+
+            Data.ChapterGuid = context.RemapId(sourceBehavior.Data.ChapterGuid);
         }
     }
 }

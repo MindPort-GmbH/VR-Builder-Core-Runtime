@@ -162,15 +162,6 @@ namespace VRBuilder.Core
             return new ParallelAbortingProcess<EntityData>(Data);
         }
 
-        /// <inheritdoc />
-        public IProcess Clone()
-        {
-            IEnumerable<IChapter> clonedChapters = Data.Chapters.Select(chapter => chapter.Clone());
-            Process clonedProcess = new Process(Data.Name, clonedChapters);
-            FinalizeCopy(this, clonedProcess);
-            return clonedProcess;
-        }
-
         protected Process() : this(null, Array.Empty<IChapter>())
         {
         }

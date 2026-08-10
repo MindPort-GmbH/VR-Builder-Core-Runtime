@@ -3,10 +3,8 @@
 // Modifications copyright (c) 2021-2026 MindPort GmbH
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
-using VRBuilder.Core.Behaviors;
 using VRBuilder.Core.Configuration.Modes;
 using VRBuilder.Core.EntityOwners;
 
@@ -135,78 +133,5 @@ namespace VRBuilder.Core
             }
         }
 
-        /// <summary>
-        /// Assigns fresh identifiers to a copied entity tree and remaps references to entities contained in that tree.
-        /// </summary>
-        protected static void FinalizeCopy(IEntity source, IEntity copy)
-        {
-            if (source == null || copy == null)
-            {
-                return;
-            }
-
-            IList<IEntity> sourceEntities = GetEntityTree(source);
-            IList<IEntity> copiedEntities = GetEntityTree(copy);
-            Dictionary<Guid, Guid> idMap = new Dictionary<Guid, Guid>();
-            int pairedEntityCount = Math.Min(sourceEntities.Count, copiedEntities.Count);
-
-            for (int index = 0; index < copiedEntities.Count; index++)
-            {
-                IEntity copiedEntity = copiedEntities[index];
-                Guid copiedId = copiedEntity.Id;
-                copiedEntity.RegenerateId();
-                idMap[copiedId] = copiedEntity.Id;
-
-                if (index < pairedEntityCount)
-                {
-                    idMap[sourceEntities[index].Id] = copiedEntity.Id;
-                }
-            }
-
-            RemapChapterReferences(copiedEntities, idMap);
-        }
-
-        private static IList<IEntity> GetEntityTree(IEntity root)
-        {
-            List<IEntity> entities = new List<IEntity>();
-            HashSet<IEntity> visited = new HashSet<IEntity>();
-            CollectEntities(root, entities, visited);
-            return entities;
-        }
-
-        private static void CollectEntities(IEntity entity, ICollection<IEntity> entities, ISet<IEntity> visited)
-        {
-            if (entity == null || visited.Add(entity) == false)
-            {
-                return;
-            }
-
-            entities.Add(entity);
-
-            if (entity is IDataOwner dataOwner && dataOwner.Data is IEntityCollectionData collectionData)
-            {
-                IEnumerable<IEntity> children = collectionData.GetChildren();
-                if (children == null)
-                {
-                    return;
-                }
-
-                foreach (IEntity child in children)
-                {
-                    CollectEntities(child, entities, visited);
-                }
-            }
-        }
-
-        private static void RemapChapterReferences(IEnumerable<IEntity> entities, IReadOnlyDictionary<Guid, Guid> idMap)
-        {
-            foreach (GoToChapterBehavior behavior in entities.OfType<GoToChapterBehavior>())
-            {
-                if (idMap.TryGetValue(behavior.Data.ChapterGuid, out Guid copiedChapterId))
-                {
-                    behavior.Data.ChapterGuid = copiedChapterId;
-                }
-            }
-        }
     }
 }

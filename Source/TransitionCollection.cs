@@ -112,13 +112,5 @@ namespace VRBuilder.Core
             return new ParallelAbortingProcess<EntityData>(Data);
         }
 
-        ///<inheritdoc />
-        public ITransitionCollection Clone()
-        {
-            TransitionCollection clonedTransitionCollection = new TransitionCollection();
-            clonedTransitionCollection.Data.Transitions = Data.Transitions.Select(transition => transition.Clone()).ToList();
-            FinalizeCopy(this, clonedTransitionCollection);
-            return clonedTransitionCollection;
-        }
     }
 }

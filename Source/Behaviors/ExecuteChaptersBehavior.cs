@@ -210,13 +210,5 @@ namespace VRBuilder.Core.Behaviors
             return new ParallelAbortingProcess<EntityData>(Data);
         }
 
-        /// <inheritdoc />
-        public override IBehavior Clone()
-        {
-            ExecuteChaptersBehavior clonedBehavior = new ExecuteChaptersBehavior();
-            Data.SubChapters.ForEach(sc => clonedBehavior.Data.SubChapters.Add(new SubChapter(sc.Chapter.Clone(), sc.IsOptional)));
-            FinalizeCopy(this, clonedBehavior);
-            return clonedBehavior;
-        }
     }
 }

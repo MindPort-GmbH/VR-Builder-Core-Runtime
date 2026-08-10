@@ -33,12 +33,5 @@ namespace VRBuilder.Core.Behaviors
             }
         }
 
-        /// <inheritdoc />
-        public virtual IBehavior Clone()
-        {
-            IBehavior clonedBehavior = MemberwiseClone() as IBehavior;
-            FinalizeCopy(this, clonedBehavior);
-            return clonedBehavior;
-        }
     }
 }

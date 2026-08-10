@@ -293,24 +293,6 @@ namespace VRBuilder.Core
         }
 
         ///<inheritdoc />
-        public IStep Clone()
-        {
-            Step clonedStep = new Step(Data.Name);
-            clonedStep.StepMetadata.Position = StepMetadata.Position;
-            clonedStep.StepMetadata.StepType = StepMetadata.StepType;
-            clonedStep.Data.Transitions = Data.Transitions.Clone();
-            clonedStep.Data.Behaviors = Data.Behaviors.Clone();
-            clonedStep.Data.Name = Data.Name;
-            clonedStep.Data.Description = Data.Description;
-            clonedStep.Data.ToUnlock = new List<LockablePropertyReference>(Data.ToUnlock);
-            clonedStep.Data.GroupsToUnlock = new Dictionary<Guid, IEnumerable<Type>>(Data.GroupsToUnlock);
-
-            FinalizeCopy(this, clonedStep);
-
-            return clonedStep;
-        }
-
-        ///<inheritdoc />
         IStepData IDataOwner<IStepData>.Data
         {
             get { return Data; }

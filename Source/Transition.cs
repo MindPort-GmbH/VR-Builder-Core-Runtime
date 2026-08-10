@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using UnityEngine;
 using VRBuilder.Core.Attributes;
+using VRBuilder.Core.Cloning;
 using VRBuilder.Core.Conditions;
 using VRBuilder.Core.Configuration.Modes;
 using VRBuilder.Core.EntityOwners;
@@ -21,7 +22,7 @@ namespace VRBuilder.Core
     /// A class for a transition from one step to another.
     /// </summary>
     [DataContract(IsReference = true)]
-    public class Transition : CompletableEntity<Transition.EntityData>, ITransition, ILockablePropertiesProvider
+    public class Transition : CompletableEntity<Transition.EntityData>, ITransition, ILockablePropertiesProvider, IEntityReferenceRemapper
     {
         /// <summary>
         /// The transition's data class.
@@ -196,13 +197,15 @@ namespace VRBuilder.Core
         }
 
         /// <inheritdoc />
-        public ITransition Clone()
+        public void RemapReferencesFrom(IEntity source, IEntityCloneContext context)
         {
-            Transition clonedTransition = new Transition();
-            clonedTransition.Data.Conditions = Data.Conditions.Select(condition => condition.Clone()).ToList();
-            clonedTransition.Data.TargetStep = Data.TargetStep;
-            FinalizeCopy(this, clonedTransition);
-            return clonedTransition;
+            if (source is not Transition sourceTransition)
+            {
+                throw new System.ArgumentException($"Expected a source of type '{typeof(Transition).FullName}'.", nameof(source));
+            }
+
+            IStep sourceTarget = sourceTransition.Data.TargetStep;
+            Data.TargetStep = context.TryGetCopy(sourceTarget, out IStep copiedTarget) ? copiedTarget : sourceTarget;
         }
     }
 }
