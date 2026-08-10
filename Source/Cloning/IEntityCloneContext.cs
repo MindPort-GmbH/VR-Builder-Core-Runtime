@@ -9,7 +9,7 @@ namespace VRBuilder.Core.Cloning
     /// <summary>
     /// Resolves references from a source entity graph to a copied entity graph.
     /// </summary>
-    public interface IEntityCloneContext
+    internal interface IEntityCloneContext
     {
         /// <summary>
         /// Returns the regenerated identifier for an entity owned by the copied graph.
@@ -18,8 +18,8 @@ namespace VRBuilder.Core.Cloning
         Guid RemapId(Guid sourceId);
 
         /// <summary>
-        /// Tries to get the copy of an entity owned by the source graph.
+        /// Resolves an object-backed reference to either the copied owned entity or the original external entity.
         /// </summary>
-        bool TryGetCopy<TEntity>(TEntity source, out TEntity copy) where TEntity : class, IEntity;
+        bool TryResolveEntity<TEntity>(Guid sourceId, out TEntity entity) where TEntity : class, IEntity;
     }
 }

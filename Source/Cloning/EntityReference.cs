@@ -13,7 +13,11 @@ namespace VRBuilder.Core.Cloning
     [DataContract(IsReference = true)]
     public abstract class EntityReference
     {
-        internal abstract void RemapFrom(EntityReference source, IEntityCloneContext context);
+        internal abstract Guid ReferencedId { get; }
+
+        internal abstract IEntity ReferencedEntity { get; }
+
+        internal abstract void Remap(Guid sourceId, IEntityCloneContext context);
     }
 
     /// <summary>
@@ -23,7 +27,6 @@ namespace VRBuilder.Core.Cloning
     [DataContract(IsReference = true)]
     public sealed class EntityReference<TEntity> : EntityReference where TEntity : class, IEntity
     {
-        [DataMember]
         private Guid id;
 
         [IgnoreDataMember]
@@ -32,12 +35,21 @@ namespace VRBuilder.Core.Cloning
         /// <summary>
         /// Referenced entity identifier.
         /// </summary>
-        public Guid Id => id;
+        [DataMember(Name = "id")]
+        public Guid Id
+        {
+            get => entity?.Id ?? id;
+            private set => Set(value);
+        }
 
         /// <summary>
         /// Nonserialized referenced entity object, if available at runtime.
         /// </summary>
         public TEntity Entity => entity;
+
+        internal override Guid ReferencedId => Id;
+
+        internal override IEntity ReferencedEntity => Entity;
 
         /// <summary>
         /// Creates an empty reference.
@@ -80,20 +92,15 @@ namespace VRBuilder.Core.Cloning
             id = referencedEntity?.Id ?? Guid.Empty;
         }
 
-        internal override void RemapFrom(EntityReference source, IEntityCloneContext context)
+        internal override void Remap(Guid sourceId, IEntityCloneContext context)
         {
-            if (source is not EntityReference<TEntity> typedSource)
+            if (context.TryResolveEntity(sourceId, out TEntity resolvedEntity))
             {
-                throw new ArgumentException($"Expected a reference of type '{typeof(EntityReference<TEntity>).FullName}'.", nameof(source));
-            }
-
-            if (typedSource.Entity != null)
-            {
-                Set(context.TryGetCopy(typedSource.Entity, out TEntity copiedEntity) ? copiedEntity : typedSource.Entity);
+                Set(resolvedEntity);
             }
             else
             {
-                Set(context.RemapId(typedSource.Id));
+                Set(context.RemapId(sourceId));
             }
         }
     }

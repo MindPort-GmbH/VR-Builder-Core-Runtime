@@ -18,31 +18,16 @@ namespace VRBuilder.Core.Cloning
     /// </summary>
     public sealed class SerializerBackedEntityCloner : IEntityCloner
     {
-        private sealed class ReferenceComparer : IEqualityComparer<IEntity>
+        private sealed class ReferenceComparer<T> : IEqualityComparer<T> where T : class
         {
-            public static ReferenceComparer Instance { get; } = new ReferenceComparer();
+            public static ReferenceComparer<T> Instance { get; } = new ReferenceComparer<T>();
 
-            public bool Equals(IEntity left, IEntity right)
+            public bool Equals(T left, T right)
             {
                 return ReferenceEquals(left, right);
             }
 
-            public int GetHashCode(IEntity entity)
-            {
-                return RuntimeHelpers.GetHashCode(entity);
-            }
-        }
-
-        private sealed class ObjectReferenceComparer : IEqualityComparer<object>
-        {
-            public static ObjectReferenceComparer Instance { get; } = new ObjectReferenceComparer();
-
-            public new bool Equals(object left, object right)
-            {
-                return ReferenceEquals(left, right);
-            }
-
-            public int GetHashCode(object value)
+            public int GetHashCode(T value)
             {
                 return RuntimeHelpers.GetHashCode(value);
             }
@@ -50,30 +35,32 @@ namespace VRBuilder.Core.Cloning
 
         private sealed class CloneContext : IEntityCloneContext
         {
-            private readonly IReadOnlyDictionary<IEntity, IEntity> copiesBySource;
-            private readonly IReadOnlyDictionary<Guid, Guid> copiedIdsBySourceId;
+            private readonly IReadOnlyDictionary<Guid, IEntity> copiesBySourceId;
+            private readonly IReadOnlyDictionary<Guid, IEntity> objectReferenceTargetsBySourceId;
 
-            public CloneContext(IReadOnlyDictionary<IEntity, IEntity> copiesBySource, IReadOnlyDictionary<Guid, Guid> copiedIdsBySourceId)
+            public CloneContext(IReadOnlyDictionary<Guid, IEntity> copiesBySourceId,
+                IReadOnlyDictionary<Guid, IEntity> objectReferenceTargetsBySourceId)
             {
-                this.copiesBySource = copiesBySource;
-                this.copiedIdsBySourceId = copiedIdsBySourceId;
+                this.copiesBySourceId = copiesBySourceId;
+                this.objectReferenceTargetsBySourceId = objectReferenceTargetsBySourceId;
             }
 
             public Guid RemapId(Guid sourceId)
             {
-                return copiedIdsBySourceId.TryGetValue(sourceId, out Guid copiedId) ? copiedId : sourceId;
+                return copiesBySourceId.TryGetValue(sourceId, out IEntity copy) ? copy.Id : sourceId;
             }
 
-            public bool TryGetCopy<TEntity>(TEntity source, out TEntity copy) where TEntity : class, IEntity
+            public bool TryResolveEntity<TEntity>(Guid sourceId, out TEntity entity) where TEntity : class, IEntity
             {
-                if (source != null && copiesBySource.TryGetValue(source, out IEntity copiedEntity) && copiedEntity is TEntity typedCopy)
+                if (objectReferenceTargetsBySourceId.TryGetValue(sourceId, out IEntity sourceTarget) == false)
                 {
-                    copy = typedCopy;
-                    return true;
+                    entity = null;
+                    return false;
                 }
 
-                copy = null;
-                return false;
+                IEntity resolvedEntity = copiesBySourceId.TryGetValue(sourceId, out IEntity copy) ? copy : sourceTarget;
+                entity = resolvedEntity as TEntity;
+                return entity != null;
             }
         }
 
@@ -94,6 +81,8 @@ namespace VRBuilder.Core.Cloning
 
             IReadOnlyList<IEntity> sourceEntities = GetOwnedEntities(source);
             IReadOnlyDictionary<Guid, IEntity> sourceEntitiesById = IndexEntitiesById(sourceEntities, "source");
+            IReadOnlyCollection<EntityReference> sourceReferences = GetEntityReferences(sourceEntities);
+            IReadOnlyDictionary<Guid, IEntity> objectReferenceTargetsBySourceId = IndexObjectReferenceTargets(sourceReferences);
 
             byte[] serializedEntity = serializer.EntityToByteArray(source);
             if (serializedEntity == null)
@@ -111,33 +100,29 @@ namespace VRBuilder.Core.Cloning
             IReadOnlyList<IEntity> copiedEntities = GetOwnedEntities(copy);
             IReadOnlyDictionary<Guid, IEntity> copiedEntitiesByOldId = IndexEntitiesById(copiedEntities, "copied");
             ValidateCopiedGraph(sourceEntities, sourceEntitiesById, copiedEntitiesByOldId);
+            IReadOnlyCollection<EntityReference> copiedReferences = GetEntityReferences(copiedEntities);
+            ValidateCopiedReferences(sourceReferences, copiedReferences);
+            IReadOnlyList<KeyValuePair<EntityReference, Guid>> copiedReferencesWithOldIds = copiedReferences
+                .Select(reference => new KeyValuePair<EntityReference, Guid>(reference, reference.ReferencedId))
+                .ToList();
 
-            Dictionary<IEntity, IEntity> copiesBySource = new Dictionary<IEntity, IEntity>(ReferenceComparer.Instance);
-            foreach (IEntity sourceEntity in sourceEntities)
-            {
-                copiesBySource.Add(sourceEntity, copiedEntitiesByOldId[sourceEntity.Id]);
-            }
-
-            Dictionary<Guid, Guid> copiedIdsBySourceId = new Dictionary<Guid, Guid>();
             HashSet<Guid> regeneratedIds = new HashSet<Guid>();
 
             foreach (IEntity sourceEntity in sourceEntities)
             {
-                IEntity copiedEntity = copiesBySource[sourceEntity];
+                IEntity copiedEntity = copiedEntitiesByOldId[sourceEntity.Id];
                 copiedEntity.RegenerateId();
 
                 if (copiedEntity.Id == Guid.Empty || sourceEntitiesById.ContainsKey(copiedEntity.Id) || regeneratedIds.Add(copiedEntity.Id) == false)
                 {
                     throw new InvalidOperationException($"Regenerating the identifier of '{copiedEntity.GetType().FullName}' produced the invalid or conflicting identifier '{copiedEntity.Id}'.");
                 }
-
-                copiedIdsBySourceId.Add(sourceEntity.Id, copiedEntity.Id);
             }
 
-            CloneContext context = new CloneContext(copiesBySource, copiedIdsBySourceId);
-            foreach (IEntity sourceEntity in sourceEntities)
+            CloneContext context = new CloneContext(copiedEntitiesByOldId, objectReferenceTargetsBySourceId);
+            foreach (KeyValuePair<EntityReference, Guid> copiedReference in copiedReferencesWithOldIds)
             {
-                RemapEntityReferences(sourceEntity, copiesBySource[sourceEntity], context);
+                copiedReference.Key.Remap(copiedReference.Value, context);
             }
 
             return copy;
@@ -146,7 +131,7 @@ namespace VRBuilder.Core.Cloning
         private static IReadOnlyList<IEntity> GetOwnedEntities(IEntity root)
         {
             List<IEntity> entities = new List<IEntity>();
-            HashSet<IEntity> visited = new HashSet<IEntity>(ReferenceComparer.Instance);
+            HashSet<IEntity> visited = new HashSet<IEntity>(ReferenceComparer<IEntity>.Instance);
             CollectOwnedEntities(root, entities, visited);
             return entities;
         }
@@ -227,42 +212,73 @@ namespace VRBuilder.Core.Cloning
             return Array.Empty<Guid?>();
         }
 
-        private static void RemapEntityReferences(IEntity source, IEntity copy, IEntityCloneContext context)
+        private static IReadOnlyDictionary<Guid, IEntity> IndexObjectReferenceTargets(IEnumerable<EntityReference> references)
         {
-            IReadOnlyDictionary<string, EntityReference> sourceReferences = GetEntityReferences(source);
-            IReadOnlyDictionary<string, EntityReference> copiedReferences = GetEntityReferences(copy);
+            Dictionary<Guid, IEntity> targetsById = new Dictionary<Guid, IEntity>();
 
-            if (sourceReferences.Count != copiedReferences.Count || sourceReferences.Keys.Any(path => copiedReferences.ContainsKey(path) == false))
+            foreach (EntityReference reference in references.Where(reference => reference.ReferencedEntity != null))
             {
-                throw new InvalidOperationException($"The configured serializer did not preserve the entity references of entity '{source.Id}'.");
-            }
+                Guid referencedId = reference.ReferencedId;
+                IEntity referencedEntity = reference.ReferencedEntity;
 
-            foreach (KeyValuePair<string, EntityReference> sourceReference in sourceReferences)
-            {
-                EntityReference copiedReference = copiedReferences[sourceReference.Key];
-                if (sourceReference.Value.GetType() != copiedReference.GetType())
+                if (referencedId == Guid.Empty)
                 {
-                    throw new InvalidOperationException($"The configured serializer changed entity reference '{sourceReference.Key}' from type '{sourceReference.Value.GetType().FullName}' to '{copiedReference.GetType().FullName}'.");
+                    throw new InvalidOperationException($"The object-backed entity reference to '{referencedEntity.GetType().FullName}' has an empty identifier.");
                 }
 
-                copiedReference.RemapFrom(sourceReference.Value, context);
+                if (targetsById.TryGetValue(referencedId, out IEntity conflictingTarget) && ReferenceEquals(conflictingTarget, referencedEntity) == false)
+                {
+                    throw new InvalidOperationException($"Entity references point to different objects sharing the identifier '{referencedId}'.");
+                }
+
+                targetsById[referencedId] = referencedEntity;
+            }
+
+            return targetsById;
+        }
+
+        private static void ValidateCopiedReferences(IEnumerable<EntityReference> sourceReferences, IEnumerable<EntityReference> copiedReferences)
+        {
+            IReadOnlyDictionary<(Type Type, Guid Id), int> sourceReferenceCounts = CountReferences(sourceReferences);
+            IReadOnlyDictionary<(Type Type, Guid Id), int> copiedReferenceCounts = CountReferences(copiedReferences);
+
+            if (sourceReferenceCounts.Count != copiedReferenceCounts.Count ||
+                sourceReferenceCounts.Any(pair => copiedReferenceCounts.TryGetValue(pair.Key, out int copiedCount) == false || copiedCount != pair.Value))
+            {
+                throw new InvalidOperationException("The configured serializer did not preserve the entity references of the copied graph.");
             }
         }
 
-        private static IReadOnlyDictionary<string, EntityReference> GetEntityReferences(IEntity entity)
+        private static IReadOnlyDictionary<(Type Type, Guid Id), int> CountReferences(IEnumerable<EntityReference> references)
         {
-            Dictionary<string, EntityReference> references = new Dictionary<string, EntityReference>();
-            HashSet<object> visited = new HashSet<object>(ObjectReferenceComparer.Instance);
+            Dictionary<(Type Type, Guid Id), int> counts = new Dictionary<(Type Type, Guid Id), int>();
 
-            if (entity is IDataOwner dataOwner)
+            foreach (EntityReference reference in references)
             {
-                CollectEntityReferences(dataOwner.Data, "$", references, visited);
+                (Type Type, Guid Id) key = (reference.GetType(), reference.ReferencedId);
+                counts[key] = counts.TryGetValue(key, out int count) ? count + 1 : 1;
+            }
+
+            return counts;
+        }
+
+        private static IReadOnlyCollection<EntityReference> GetEntityReferences(IEnumerable<IEntity> entities)
+        {
+            HashSet<EntityReference> references = new HashSet<EntityReference>(ReferenceComparer<EntityReference>.Instance);
+
+            foreach (IEntity entity in entities)
+            {
+                if (entity is IDataOwner dataOwner)
+                {
+                    HashSet<object> visited = new HashSet<object>(ReferenceComparer<object>.Instance);
+                    CollectEntityReferences(dataOwner.Data, references, visited);
+                }
             }
 
             return references;
         }
 
-        private static void CollectEntityReferences(object value, string path, IDictionary<string, EntityReference> references, ISet<object> visited)
+        private static void CollectEntityReferences(object value, ISet<EntityReference> references, ISet<object> visited)
         {
             if (value == null)
             {
@@ -271,7 +287,7 @@ namespace VRBuilder.Core.Cloning
 
             if (value is EntityReference entityReference)
             {
-                references.Add(path, entityReference);
+                references.Add(entityReference);
                 return;
             }
 
@@ -293,12 +309,10 @@ namespace VRBuilder.Core.Cloning
 
             if (value is IDictionary dictionary)
             {
-                int index = 0;
                 foreach (DictionaryEntry entry in dictionary)
                 {
-                    CollectEntityReferences(entry.Key, $"{path}[{index}].Key", references, visited);
-                    CollectEntityReferences(entry.Value, $"{path}[{index}].Value", references, visited);
-                    index++;
+                    CollectEntityReferences(entry.Key, references, visited);
+                    CollectEntityReferences(entry.Value, references, visited);
                 }
 
                 return;
@@ -306,11 +320,9 @@ namespace VRBuilder.Core.Cloning
 
             if (value is IEnumerable enumerable)
             {
-                int index = 0;
                 foreach (object item in enumerable)
                 {
-                    CollectEntityReferences(item, $"{path}[{index}]", references, visited);
-                    index++;
+                    CollectEntityReferences(item, references, visited);
                 }
 
                 return;
@@ -326,7 +338,7 @@ namespace VRBuilder.Core.Cloning
 
             foreach (FieldInfo field in GetInstanceFields(type))
             {
-                CollectEntityReferences(field.GetValue(value), $"{path}.{field.DeclaringType.FullName}.{field.Name}", references, visited);
+                CollectEntityReferences(field.GetValue(value), references, visited);
             }
         }
 
@@ -336,8 +348,7 @@ namespace VRBuilder.Core.Cloning
             {
                 foreach (FieldInfo field in currentType
                     .GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)
-                    .Where(field => field.IsStatic == false && field.IsNotSerialized == false)
-                    .OrderBy(field => field.MetadataToken))
+                    .Where(field => field.IsStatic == false && field.IsNotSerialized == false))
                 {
                     yield return field;
                 }
