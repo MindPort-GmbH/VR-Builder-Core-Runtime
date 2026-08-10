@@ -294,6 +294,8 @@ namespace VRBuilder.Core
             clonedStep.Data.ToUnlock = new List<LockablePropertyReference>(Data.ToUnlock);
             clonedStep.Data.GroupsToUnlock = new Dictionary<Guid, IEnumerable<Type>>(Data.GroupsToUnlock);
 
+            EntityCopyUtils.FinalizeCopy(this, clonedStep);
+
             return clonedStep;
         }
 
@@ -310,7 +312,7 @@ namespace VRBuilder.Core
         public Step(string name)
         {
             StepMetadata = new StepMetadata();
-            StepMetadata.Guid = Guid.NewGuid();
+            StepMetadata.Guid = Id;
 
             Data.Transitions = new TransitionCollection();
             Data.Behaviors = new BehaviorCollection();
@@ -319,6 +321,21 @@ namespace VRBuilder.Core
             if (LifeCycleLoggingConfig.Instance.LogSteps)
             {
                 LifeCycle.StageChanged += (sender, args) => { Debug.LogFormat("{0}<b>Step</b> <i>'{1}'</i> is <b>{2}</b>.\n", ConsoleUtils.GetTabs(), Data.Name, LifeCycle.Stage); };
+            }
+        }
+
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext context)
+        {
+            StepMetadata = StepMetadata ?? new StepMetadata();
+
+            if (StepMetadata.Guid == Guid.Empty)
+            {
+                StepMetadata.Guid = Id;
+            }
+            else
+            {
+                SetId(StepMetadata.Guid);
             }
         }
     }

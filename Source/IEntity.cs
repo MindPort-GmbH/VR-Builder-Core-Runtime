@@ -57,12 +57,6 @@ namespace VRBuilder.Core
         /// <summary>
         /// Entity parent to this entity.
         /// </summary>
-        [Obsolete("Use ParentId instead.")]
         IEntity Parent { get; set; }
-
-        /// <summary>
-        /// Unique identifier of the parent entity.
-        /// </summary>
-        Guid ParentId { get; }
     }
 }

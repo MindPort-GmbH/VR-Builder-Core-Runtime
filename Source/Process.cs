@@ -155,7 +155,9 @@ namespace VRBuilder.Core
         public IProcess Clone()
         {
             IEnumerable<IChapter> clonedChapters = Data.Chapters.Select(chapter => chapter.Clone());
-            return new Process(Data.Name, clonedChapters);
+            Process clonedProcess = new Process(Data.Name, clonedChapters);
+            EntityCopyUtils.FinalizeCopy(this, clonedProcess);
+            return clonedProcess;
         }
 
         protected Process() : this(null, Array.Empty<IChapter>())
@@ -169,10 +171,25 @@ namespace VRBuilder.Core
         public Process(string name, IEnumerable<IChapter> chapters)
         {
             ProcessMetadata = new ProcessMetadata();
-            ProcessMetadata.Guid = Guid.NewGuid();
+            ProcessMetadata.Guid = Id;
 
             Data.Chapters = chapters.ToList();
             Data.Name = name;
+        }
+
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext context)
+        {
+            ProcessMetadata = ProcessMetadata ?? new ProcessMetadata();
+
+            if (ProcessMetadata.Guid == Guid.Empty)
+            {
+                ProcessMetadata.Guid = Id;
+            }
+            else
+            {
+                SetId(ProcessMetadata.Guid);
+            }
         }
     }
 }

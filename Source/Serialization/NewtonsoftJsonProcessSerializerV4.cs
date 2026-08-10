@@ -371,6 +371,9 @@ namespace VRBuilder.Core.Serialization
 
                 public ILifeCycle LifeCycle { get; } = null;
 
+                [JsonIgnore]
+                public Guid Id => StepMetadata?.Guid ?? Guid.Empty;
+
                 public IStageProcess GetActivatingProcess()
                 {
                     throw new NotImplementedException();

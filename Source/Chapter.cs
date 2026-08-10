@@ -224,6 +224,8 @@ namespace VRBuilder.Core
                 }
             }
 
+            EntityCopyUtils.FinalizeCopy(this, clonedChapter);
+
             return clonedChapter;
         }
 
@@ -240,7 +242,7 @@ namespace VRBuilder.Core
         public Chapter(string name, IStep firstStep)
         {
             ChapterMetadata = new ChapterMetadata();
-            ChapterMetadata.Guid = Guid.NewGuid();
+            ChapterMetadata.Guid = Id;
 
             Data.Name = name;
             Data.FirstStep = firstStep;
@@ -257,6 +259,21 @@ namespace VRBuilder.Core
                 {
                     Debug.LogFormat("<b>Chapter</b> <i>'{0}'</i> is <b>{1}</b>.\n", Data.Name, LifeCycle.Stage.ToString());
                 };
+            }
+        }
+
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext context)
+        {
+            ChapterMetadata = ChapterMetadata ?? new ChapterMetadata();
+
+            if (ChapterMetadata.Guid == Guid.Empty)
+            {
+                ChapterMetadata.Guid = Id;
+            }
+            else
+            {
+                SetId(ChapterMetadata.Guid);
             }
         }
     }

@@ -201,6 +201,7 @@ namespace VRBuilder.Core
             Transition clonedTransition = new Transition();
             clonedTransition.Data.Conditions = Data.Conditions.Select(condition => condition.Clone()).ToList();
             clonedTransition.Data.TargetStep = Data.TargetStep;
+            EntityCopyUtils.FinalizeCopy(this, clonedTransition);
             return clonedTransition;
         }
     }

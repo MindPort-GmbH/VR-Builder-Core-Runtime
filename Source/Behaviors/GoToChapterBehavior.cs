@@ -88,5 +88,13 @@ namespace VRBuilder.Core.Behaviors
         {
             return new ActivatingProcess(Data);
         }
+
+        /// <inheritdoc />
+        public override IBehavior Clone()
+        {
+            GoToChapterBehavior clonedBehavior = new GoToChapterBehavior(Data.ChapterGuid);
+            EntityCopyUtils.FinalizeCopy(this, clonedBehavior);
+            return clonedBehavior;
+        }
     }
 }
