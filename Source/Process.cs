@@ -76,6 +76,17 @@ namespace VRBuilder.Core
         [DataMember]
         public ProcessMetadata ProcessMetadata { get; set; }
 
+        /// <inheritdoc />
+        public override void RegenerateId()
+        {
+            base.RegenerateId();
+
+            if (ProcessMetadata != null)
+            {
+                ProcessMetadata.Guid = Id;
+            }
+        }
+
         private class ActivatingProcess : EntityIteratingProcess<IEntityNonLinearSequenceDataWithMode<IChapter>, IChapter>
         {
             private List<IChapter> chapters;

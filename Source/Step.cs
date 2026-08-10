@@ -251,6 +251,17 @@ namespace VRBuilder.Core
         [DataMember]
         public StepMetadata StepMetadata { get; set; }
 
+        /// <inheritdoc />
+        public override void RegenerateId()
+        {
+            base.RegenerateId();
+
+            if (StepMetadata != null)
+            {
+                StepMetadata.Guid = Id;
+            }
+        }
+
         ///<inheritdoc />
         public override IStageProcess GetActivatingProcess()
         {

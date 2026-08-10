@@ -374,6 +374,11 @@ namespace VRBuilder.Core.Serialization
                 [JsonIgnore]
                 public Guid Id => StepMetadata?.Guid ?? Guid.Empty;
 
+                public void RegenerateId()
+                {
+                    throw new NotImplementedException();
+                }
+
                 public IStageProcess GetActivatingProcess()
                 {
                     throw new NotImplementedException();

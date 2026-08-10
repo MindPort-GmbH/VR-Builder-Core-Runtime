@@ -173,6 +173,17 @@ namespace VRBuilder.Core
         public ChapterMetadata ChapterMetadata { get; set; }
 
         /// <inheritdoc />
+        public override void RegenerateId()
+        {
+            base.RegenerateId();
+
+            if (ChapterMetadata != null)
+            {
+                ChapterMetadata.Guid = Id;
+            }
+        }
+
+        /// <inheritdoc />
         public override IStageProcess GetActivatingProcess()
         {
             return new ActivatingProcess(Data);

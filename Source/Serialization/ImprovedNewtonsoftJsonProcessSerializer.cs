@@ -119,6 +119,11 @@ namespace VRBuilder.Core.Serialization
                 [JsonIgnore]
                 public Guid Id { get; } = Guid.NewGuid();
 
+                public void RegenerateId()
+                {
+                    throw new NotImplementedException();
+                }
+
                 public IStageProcess GetActivatingProcess()
                 {
                     throw new NotImplementedException();

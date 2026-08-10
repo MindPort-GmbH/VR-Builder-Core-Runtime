@@ -13,43 +13,16 @@ using VRBuilder.Core.EntityOwners;
 namespace VRBuilder.Core
 {
     /// <summary>
-    /// Provides the identity shared by all process entities.
-    /// </summary>
-    [DataContract(IsReference = true)]
-    public abstract class EntityBase
-    {
-        /// <summary>
-        /// Unique identifier of the entity.
-        /// </summary>
-        [DataMember]
-        public Guid Id { get; private set; }
-
-        protected EntityBase()
-        {
-            Id = Guid.NewGuid();
-        }
-
-        /// <summary>
-        /// Sets the entity identifier during migration from legacy metadata.
-        /// </summary>
-        protected void SetId(Guid id)
-        {
-            Id = id;
-        }
-
-        internal void SetEntityId(Guid id)
-        {
-            Id = id;
-        }
-    }
-
-    /// <summary>
     /// Abstract helper class that can be used for instances that implement <see cref="IEntity"/>. Provides implementation of the events and properties, and also
     /// offers member functions to trigger state changes.
     /// </summary>
     [DataContract(IsReference = true)]
-    public abstract class Entity<TData> : EntityBase, IEntity, IDataOwner<TData> where TData : class, IData, new()
+    public abstract class Entity<TData> : IEntity, IDataOwner<TData> where TData : class, IData, new()
     {
+        /// <inheritdoc />
+        [DataMember]
+        public Guid Id { get; private set; }
+
         /// <inheritdoc />
         [DataMember]
         public TData Data { get; private set; }
@@ -70,8 +43,23 @@ namespace VRBuilder.Core
 
         protected Entity()
         {
+            Id = Guid.NewGuid();
             LifeCycle = new LifeCycle(this);
             Data = new TData();
+        }
+
+        /// <inheritdoc />
+        public virtual void RegenerateId()
+        {
+            Id = Guid.NewGuid();
+        }
+
+        /// <summary>
+        /// Sets the entity identifier during migration from legacy metadata.
+        /// </summary>
+        protected void SetId(Guid id)
+        {
+            Id = id;
         }
 
         /// <inheritdoc />
@@ -170,14 +158,8 @@ namespace VRBuilder.Core
             foreach (IEntity child in entities)
             {
                 Guid previousId = child.Id;
-                Guid newId = Guid.NewGuid();
-
-                if (child is EntityBase mutableEntity)
-                {
-                    mutableEntity.SetEntityId(newId);
-                    idMap[previousId] = newId;
-                    SynchronizeMetadata(child);
-                }
+                child.RegenerateId();
+                idMap[previousId] = child.Id;
             }
 
             RemapChapterReferences(entities, idMap);
@@ -199,19 +181,12 @@ namespace VRBuilder.Core
             {
                 IEntity copiedEntity = copiedEntities[index];
                 Guid copiedId = copiedEntity.Id;
-                Guid newId = Guid.NewGuid();
+                copiedEntity.RegenerateId();
+                idMap[copiedId] = copiedEntity.Id;
 
-                if (copiedEntity is EntityBase mutableEntity)
+                if (index < pairedEntityCount)
                 {
-                    mutableEntity.SetEntityId(newId);
-                    idMap[copiedId] = newId;
-
-                    if (index < pairedEntityCount)
-                    {
-                        idMap[sourceEntities[index].Id] = newId;
-                    }
-
-                    SynchronizeMetadata(copiedEntity);
+                    idMap[sourceEntities[index].Id] = copiedEntity.Id;
                 }
             }
 
@@ -247,24 +222,6 @@ namespace VRBuilder.Core
                 {
                     CollectEntities(child, entities, visited);
                 }
-            }
-        }
-
-        private static void SynchronizeMetadata(IEntity entity)
-        {
-            if (entity is IStep step && step.StepMetadata != null)
-            {
-                step.StepMetadata.Guid = entity.Id;
-            }
-
-            if (entity is IChapter chapter && chapter.ChapterMetadata != null)
-            {
-                chapter.ChapterMetadata.Guid = entity.Id;
-            }
-
-            if (entity is IProcess process && process.ProcessMetadata != null)
-            {
-                process.ProcessMetadata.Guid = entity.Id;
             }
         }
 

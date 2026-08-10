@@ -20,6 +20,11 @@ namespace VRBuilder.Core
         Guid Id { get; }
 
         /// <summary>
+        /// Generates a new unique identifier for the entity.
+        /// </summary>
+        void RegenerateId();
+
+        /// <summary>
         /// The entity's life cycle.
         /// </summary>
         ILifeCycle LifeCycle { get; }
