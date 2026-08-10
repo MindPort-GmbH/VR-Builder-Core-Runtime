@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0
 // Modifications copyright (c) 2021-2026 MindPort GmbH
 
+using System;
 using VRBuilder.Core.Configuration.Modes;
 
 namespace VRBuilder.Core
@@ -13,6 +14,11 @@ namespace VRBuilder.Core
     /// </summary>
     public interface IEntity
     {
+        /// <summary>
+        /// Unique identifier of the entity.
+        /// </summary>
+        Guid Id { get; }
+
         /// <summary>
         /// The entity's life cycle.
         /// </summary>
@@ -51,6 +57,12 @@ namespace VRBuilder.Core
         /// <summary>
         /// Entity parent to this entity.
         /// </summary>
+        [Obsolete("Use ParentId instead.")]
         IEntity Parent { get; set; }
+
+        /// <summary>
+        /// Unique identifier of the parent entity.
+        /// </summary>
+        Guid ParentId { get; }
     }
 }
