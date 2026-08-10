@@ -22,7 +22,7 @@ namespace VRBuilder.Core
     /// A class for a transition from one step to another.
     /// </summary>
     [DataContract(IsReference = true)]
-    public class Transition : CompletableEntity<Transition.EntityData>, ITransition, ILockablePropertiesProvider, IEntityReferenceRemapper
+    public class Transition : CompletableEntity<Transition.EntityData>, ITransition, ILockablePropertiesProvider
     {
         /// <summary>
         /// The transition's data class.
@@ -44,7 +44,17 @@ namespace VRBuilder.Core
             ///<inheritdoc />
             [HideInProcessInspector]
             [DataMember]
-            public IStep TargetStep { get; set; }
+            public IStep TargetStep
+            {
+                get => TargetStepReference.Entity;
+                set => TargetStepReference.Set(value);
+            }
+
+            /// <summary>
+            /// Clone-aware representation of <see cref="TargetStep"/>.
+            /// </summary>
+            [IgnoreDataMember]
+            public EntityReference<IStep> TargetStepReference { get; } = new EntityReference<IStep>();
 
             ///<inheritdoc />
             public IMode Mode { get; set; }
@@ -196,16 +206,5 @@ namespace VRBuilder.Core
             return lockable;
         }
 
-        /// <inheritdoc />
-        public void RemapReferencesFrom(IEntity source, IEntityCloneContext context)
-        {
-            if (source is not Transition sourceTransition)
-            {
-                throw new System.ArgumentException($"Expected a source of type '{typeof(Transition).FullName}'.", nameof(source));
-            }
-
-            IStep sourceTarget = sourceTransition.Data.TargetStep;
-            Data.TargetStep = context.TryGetCopy(sourceTarget, out IStep copiedTarget) ? copiedTarget : sourceTarget;
-        }
     }
 }

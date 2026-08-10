@@ -13,7 +13,7 @@ namespace VRBuilder.Core.Behaviors
     /// This behavior sets the next chapter to an arbitrary chapter and immediately aborts the current chapter.
     /// </summary>
     [DataContract(IsReference = true)]
-    public class GoToChapterBehavior : Behavior<GoToChapterBehavior.EntityData>, IEntityReferenceRemapper
+    public class GoToChapterBehavior : Behavior<GoToChapterBehavior.EntityData>
     {
         /// <summary>
         /// Behavior data.
@@ -25,7 +25,17 @@ namespace VRBuilder.Core.Behaviors
             [DataMember]
             [DisplayName("Chapter")]
             [DisplayTooltip("Chapter to jump to. The current chapter is aborted immediately.")]
-            public Guid ChapterGuid { get; set; }
+            public Guid ChapterGuid
+            {
+                get => ChapterReference.Id;
+                set => ChapterReference.Set(value);
+            }
+
+            /// <summary>
+            /// Clone-aware representation of <see cref="ChapterGuid"/>.
+            /// </summary>
+            [IgnoreDataMember]
+            public EntityReference<IChapter> ChapterReference { get; } = new EntityReference<IChapter>();
 
             public Metadata Metadata { get; set; }
 
@@ -90,15 +100,5 @@ namespace VRBuilder.Core.Behaviors
             return new ActivatingProcess(Data);
         }
 
-        /// <inheritdoc />
-        public void RemapReferencesFrom(IEntity source, IEntityCloneContext context)
-        {
-            if (source is not GoToChapterBehavior sourceBehavior)
-            {
-                throw new ArgumentException($"Expected a source of type '{typeof(GoToChapterBehavior).FullName}'.", nameof(source));
-            }
-
-            Data.ChapterGuid = context.RemapId(sourceBehavior.Data.ChapterGuid);
-        }
     }
 }

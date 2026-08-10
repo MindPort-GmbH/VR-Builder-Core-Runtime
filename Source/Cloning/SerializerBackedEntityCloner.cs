@@ -3,8 +3,10 @@
 // Modifications copyright (c) 2021-2026 MindPort GmbH
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using VRBuilder.Core.EntityOwners;
 using VRBuilder.Core.Serialization;
@@ -28,6 +30,21 @@ namespace VRBuilder.Core.Cloning
             public int GetHashCode(IEntity entity)
             {
                 return RuntimeHelpers.GetHashCode(entity);
+            }
+        }
+
+        private sealed class ObjectReferenceComparer : IEqualityComparer<object>
+        {
+            public static ObjectReferenceComparer Instance { get; } = new ObjectReferenceComparer();
+
+            public new bool Equals(object left, object right)
+            {
+                return ReferenceEquals(left, right);
+            }
+
+            public int GetHashCode(object value)
+            {
+                return RuntimeHelpers.GetHashCode(value);
             }
         }
 
@@ -120,10 +137,7 @@ namespace VRBuilder.Core.Cloning
             CloneContext context = new CloneContext(copiesBySource, copiedIdsBySourceId);
             foreach (IEntity sourceEntity in sourceEntities)
             {
-                if (copiesBySource[sourceEntity] is IEntityReferenceRemapper remapper)
-                {
-                    remapper.RemapReferencesFrom(sourceEntity, context);
-                }
+                RemapEntityReferences(sourceEntity, copiesBySource[sourceEntity], context);
             }
 
             return copy;
@@ -211,6 +225,123 @@ namespace VRBuilder.Core.Cloning
             }
 
             return Array.Empty<Guid?>();
+        }
+
+        private static void RemapEntityReferences(IEntity source, IEntity copy, IEntityCloneContext context)
+        {
+            IReadOnlyDictionary<string, EntityReference> sourceReferences = GetEntityReferences(source);
+            IReadOnlyDictionary<string, EntityReference> copiedReferences = GetEntityReferences(copy);
+
+            if (sourceReferences.Count != copiedReferences.Count || sourceReferences.Keys.Any(path => copiedReferences.ContainsKey(path) == false))
+            {
+                throw new InvalidOperationException($"The configured serializer did not preserve the entity references of entity '{source.Id}'.");
+            }
+
+            foreach (KeyValuePair<string, EntityReference> sourceReference in sourceReferences)
+            {
+                EntityReference copiedReference = copiedReferences[sourceReference.Key];
+                if (sourceReference.Value.GetType() != copiedReference.GetType())
+                {
+                    throw new InvalidOperationException($"The configured serializer changed entity reference '{sourceReference.Key}' from type '{sourceReference.Value.GetType().FullName}' to '{copiedReference.GetType().FullName}'.");
+                }
+
+                copiedReference.RemapFrom(sourceReference.Value, context);
+            }
+        }
+
+        private static IReadOnlyDictionary<string, EntityReference> GetEntityReferences(IEntity entity)
+        {
+            Dictionary<string, EntityReference> references = new Dictionary<string, EntityReference>();
+            HashSet<object> visited = new HashSet<object>(ObjectReferenceComparer.Instance);
+
+            if (entity is IDataOwner dataOwner)
+            {
+                CollectEntityReferences(dataOwner.Data, "$", references, visited);
+            }
+
+            return references;
+        }
+
+        private static void CollectEntityReferences(object value, string path, IDictionary<string, EntityReference> references, ISet<object> visited)
+        {
+            if (value == null)
+            {
+                return;
+            }
+
+            if (value is EntityReference entityReference)
+            {
+                references.Add(path, entityReference);
+                return;
+            }
+
+            if (value is IEntity || value is string || value is Delegate || value is Type)
+            {
+                return;
+            }
+
+            Type type = value.GetType();
+            if (type.IsPrimitive || type.IsEnum || value is decimal || value is Guid || value is DateTime || value is TimeSpan)
+            {
+                return;
+            }
+
+            if (type.IsValueType == false && visited.Add(value) == false)
+            {
+                return;
+            }
+
+            if (value is IDictionary dictionary)
+            {
+                int index = 0;
+                foreach (DictionaryEntry entry in dictionary)
+                {
+                    CollectEntityReferences(entry.Key, $"{path}[{index}].Key", references, visited);
+                    CollectEntityReferences(entry.Value, $"{path}[{index}].Value", references, visited);
+                    index++;
+                }
+
+                return;
+            }
+
+            if (value is IEnumerable enumerable)
+            {
+                int index = 0;
+                foreach (object item in enumerable)
+                {
+                    CollectEntityReferences(item, $"{path}[{index}]", references, visited);
+                    index++;
+                }
+
+                return;
+            }
+
+            string namespaceName = type.Namespace ?? string.Empty;
+            if (namespaceName.StartsWith("System", StringComparison.Ordinal) ||
+                namespaceName.StartsWith("UnityEngine", StringComparison.Ordinal) ||
+                namespaceName.StartsWith("UnityEditor", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            foreach (FieldInfo field in GetInstanceFields(type))
+            {
+                CollectEntityReferences(field.GetValue(value), $"{path}.{field.DeclaringType.FullName}.{field.Name}", references, visited);
+            }
+        }
+
+        private static IEnumerable<FieldInfo> GetInstanceFields(Type type)
+        {
+            for (Type currentType = type; currentType != null && currentType != typeof(object); currentType = currentType.BaseType)
+            {
+                foreach (FieldInfo field in currentType
+                    .GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)
+                    .Where(field => field.IsStatic == false && field.IsNotSerialized == false)
+                    .OrderBy(field => field.MetadataToken))
+                {
+                    yield return field;
+                }
+            }
         }
     }
 }
