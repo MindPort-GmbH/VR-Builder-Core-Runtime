@@ -151,9 +151,10 @@ namespace VRBuilder.Core.Serialization
                 {
                     foreach (ITransition transition in step.Data.Transitions.Data.Transitions)
                     {
-                        if (transition.Data.TargetStep != null)
+                        IStep targetStep = transition.Data.TargetStepReference.Entity;
+                        if (targetStep != null)
                         {
-                            transition.Data.TargetStep = new StepRef() { StepMetadata = new StepMetadata() { Guid = transition.Data.TargetStep.StepMetadata.Guid } };
+                            transition.Data.TargetStepReference.Set(new StepRef() { StepMetadata = new StepMetadata() { Guid = targetStep.StepMetadata.Guid } });
                         }
                     }
                 }
@@ -187,13 +188,13 @@ namespace VRBuilder.Core.Serialization
                 {
                     foreach (ITransition transition in step.Data.Transitions.Data.Transitions)
                     {
-                        if (transition.Data.TargetStep == null)
+                        if (transition.Data.TargetStepReference.Entity != null && transition.Data.TargetStepReference.Entity is not StepRef)
                         {
                             continue;
                         }
 
-                        StepRef stepRef = (StepRef)transition.Data.TargetStep;
-                        transition.Data.TargetStep = Steps.FirstOrDefault(step => step.StepMetadata.Guid == stepRef.StepMetadata.Guid);
+                        Guid targetId = transition.Data.TargetStepReference.Id;
+                        transition.Data.TargetStepReference.Set(Steps.FirstOrDefault(candidate => candidate.Id == targetId));
                     }
                 }
 
@@ -250,9 +251,10 @@ namespace VRBuilder.Core.Serialization
                 {
                     foreach (ITransition transition in step.Data.Transitions.Data.Transitions)
                     {
-                        if (transition.Data.TargetStep != null)
+                        IStep targetStep = transition.Data.TargetStepReference.Entity;
+                        if (targetStep != null)
                         {
-                            transition.Data.TargetStep = new StepRef() { StepMetadata = new StepMetadata() { Guid = transition.Data.TargetStep.StepMetadata.Guid } };
+                            transition.Data.TargetStepReference.Set(new StepRef() { StepMetadata = new StepMetadata() { Guid = targetStep.StepMetadata.Guid } });
                         }
                     }
                 }
@@ -286,13 +288,13 @@ namespace VRBuilder.Core.Serialization
                 {
                     foreach (ITransition transition in step.Data.Transitions.Data.Transitions)
                     {
-                        if (transition.Data.TargetStep == null)
+                        if (transition.Data.TargetStepReference.Entity != null && transition.Data.TargetStepReference.Entity is not StepRef)
                         {
                             continue;
                         }
 
-                        StepRef stepRef = (StepRef)transition.Data.TargetStep;
-                        transition.Data.TargetStep = Steps.FirstOrDefault(step => step.StepMetadata.Guid == stepRef.StepMetadata.Guid);
+                        Guid targetId = transition.Data.TargetStepReference.Id;
+                        transition.Data.TargetStepReference.Set(Steps.FirstOrDefault(candidate => candidate.Id == targetId));
                     }
                 }
 

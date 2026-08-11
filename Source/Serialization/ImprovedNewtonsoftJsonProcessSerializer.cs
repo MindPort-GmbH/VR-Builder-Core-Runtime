@@ -76,9 +76,10 @@ namespace VRBuilder.Core.Serialization
                 {
                     foreach (ITransition transition in step.Data.Transitions.Data.Transitions)
                     {
-                        if (transition.Data.TargetStep != null)
+                        IStep targetStep = transition.Data.TargetStepReference.Entity;
+                        if (targetStep != null)
                         {
-                            transition.Data.TargetStep = new StepRef() { PositionIndex = Steps.IndexOf(transition.Data.TargetStep) };
+                            transition.Data.TargetStepReference.Set(new StepRef() { PositionIndex = Steps.IndexOf(targetStep) });
                         }
                     }
                 }
@@ -91,13 +92,10 @@ namespace VRBuilder.Core.Serialization
                 {
                     foreach (ITransition transition in step.Data.Transitions.Data.Transitions)
                     {
-                        if (transition.Data.TargetStep == null)
+                        if (transition.Data.TargetStepReference.Entity is StepRef stepRef)
                         {
-                            continue;
+                            transition.Data.TargetStepReference.Set(stepRef.PositionIndex >= 0 ? Steps[stepRef.PositionIndex] : null);
                         }
-
-                        StepRef stepRef = (StepRef)transition.Data.TargetStep;
-                        transition.Data.TargetStep = stepRef.PositionIndex >= 0 ? Steps[stepRef.PositionIndex] : null;
                     }
                 }
 

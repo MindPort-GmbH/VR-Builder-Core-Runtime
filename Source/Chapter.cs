@@ -88,7 +88,7 @@ namespace VRBuilder.Core
                 {
                     yield return current;
 
-                    current = current.Data.Transitions.Data.Transitions.First(transition => transition.IsCompleted).Data.TargetStep;
+                    current = current.Data.Transitions.Data.Transitions.First(transition => transition.IsCompleted).Data.TargetStepReference.Entity;
                 }
             }
 
@@ -141,7 +141,7 @@ namespace VRBuilder.Core
                     return;
                 }
 
-                if (Data.Current.FindPathInGraph(step => step.Data.Transitions.Data.Transitions.Select(transition => transition.Data.TargetStep), null, out IList<IStep> pathToChapterEnd) == false)
+                if (Data.Current.FindPathInGraph(step => step.Data.Transitions.Data.Transitions.Select(transition => transition.Data.TargetStepReference.Entity), null, out IList<IStep> pathToChapterEnd) == false)
                 {
                     throw new InvalidStateException("The end of the chapter is not reachable from the current step.");
                 }
@@ -155,7 +155,7 @@ namespace VRBuilder.Core
 
                     Data.Current.LifeCycle.MarkToFastForward();
 
-                    ITransition toAutocomplete = Data.Current.Data.Transitions.Data.Transitions.First(transition => transition.Data.TargetStep == step);
+                    ITransition toAutocomplete = Data.Current.Data.Transitions.Data.Transitions.First(transition => transition.Data.TargetStepReference.Entity == step);
                     if (toAutocomplete.IsCompleted == false)
                     {
                         toAutocomplete.Autocomplete();
