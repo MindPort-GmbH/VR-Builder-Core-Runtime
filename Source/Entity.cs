@@ -17,9 +17,7 @@ namespace VRBuilder.Core
     [DataContract(IsReference = true)]
     public abstract class Entity<TData> : IEntity, IDataOwner<TData>, IRuntimeEntity where TData : class, IData, new()
     {
-        [System.NonSerialized]
         [IgnoreDataMember]
-        [Newtonsoft.Json.JsonIgnore]
         private IEntity[] runtimeChildren;
 
         /// <inheritdoc />
