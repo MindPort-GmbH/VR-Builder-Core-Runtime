@@ -154,6 +154,8 @@ namespace VRBuilder.Core.Serialization
 
                 public StepMetadata StepMetadata { get; set; }
                 public IEntity Parent { get; set; }
+                [JsonIgnore]
+                public Guid ParentId => Parent?.Id ?? Guid.Empty;
             }
         }
     }

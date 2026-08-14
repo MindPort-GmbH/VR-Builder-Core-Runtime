@@ -40,7 +40,9 @@ namespace VRBuilder.Core.Utils
 					segments.Add($"<b>{typeName}</b> '<i>{name}</i>'");
 				}
 
+#pragma warning disable CS0618 // Parent is retained for backwards-compatible object traversal.
 				current = current.Parent;
+#pragma warning restore CS0618
 			}
 
 			segments.Reverse();
