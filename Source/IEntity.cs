@@ -69,5 +69,11 @@ namespace VRBuilder.Core
         /// Unique identifier of the parent entity, or <see cref="Guid.Empty"/> if the entity has no parent.
         /// </summary>
         Guid ParentId { get; }
+
+        /// <summary>
+        /// Sets the unique identifier of the parent entity.
+        /// </summary>
+        /// <param name="parentId">Unique identifier of the parent entity, or <see cref="Guid.Empty"/> to clear it.</param>
+        void SetParent(Guid parentId);
     }
 }
