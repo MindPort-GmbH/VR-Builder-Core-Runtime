@@ -14,7 +14,7 @@ using VRBuilder.Core.Serialization;
 namespace VRBuilder.Core.Cloning
 {
     /// <summary>
-    /// Creates entity copies by round-tripping them through an <see cref="IProcessSerializer"/>.
+    /// Creates independent entity copies by serializing and deserializing their owned graph, then regenerating IDs and remapping internal references.
     /// </summary>
     public sealed class SerializerBackedEntityCloner : IEntityCloner
     {
