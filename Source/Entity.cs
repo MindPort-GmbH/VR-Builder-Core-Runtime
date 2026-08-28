@@ -39,10 +39,6 @@ namespace VRBuilder.Core
         [IgnoreDataMember]
         public IEntity Parent { get; set; }
 
-        /// <inheritdoc />
-        [IgnoreDataMember]
-        public Guid ParentId { get; private set; }
-
         protected Entity()
         {
             Id = Guid.NewGuid();
@@ -54,13 +50,6 @@ namespace VRBuilder.Core
         public virtual void RegenerateId()
         {
             Id = Guid.NewGuid();
-            SetChildrenParentId();
-        }
-
-        /// <inheritdoc />
-        public void SetParent(Guid parentId)
-        {
-            ParentId = parentId;
         }
 
         /// <summary>
@@ -111,10 +100,7 @@ namespace VRBuilder.Core
             {
                 foreach (IEntity child in collectionData.GetChildren().Distinct())
                 {
-                    child.SetParent(Id);
-#pragma warning disable CS0618 // Parent is retained for backwards-compatible object traversal.
                     child.Parent = this;
-#pragma warning restore CS0618
                     child.Configure(mode);
                 }
             }
@@ -143,17 +129,6 @@ namespace VRBuilder.Core
                 foreach (IEntity child in collectionData.GetChildren().Distinct())
                 {
                     child.Update();
-                }
-            }
-        }
-
-        private void SetChildrenParentId()
-        {
-            if (Data is IEntityCollectionData collectionData)
-            {
-                foreach (IEntity child in collectionData.GetChildren().Distinct())
-                {
-                    child.SetParent(Id);
                 }
             }
         }
