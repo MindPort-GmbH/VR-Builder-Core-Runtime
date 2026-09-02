@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using UnityEngine.Scripting;
 using VRBuilder.Core.Attributes;
+using VRBuilder.Core.Cloning;
 
 namespace VRBuilder.Core.Behaviors
 {
@@ -21,10 +22,21 @@ namespace VRBuilder.Core.Behaviors
         [DataContract(IsReference = true)]
         public class EntityData : IBehaviorData
         {
+            /// <summary>
+            /// Clone-aware reference to the chapter to jump to.
+            /// </summary>
             [DataMember]
             [DisplayName("Chapter")]
             [DisplayTooltip("Chapter to jump to. The current chapter is aborted immediately.")]
-            public Guid ChapterGuid { get; set; }
+            public EntityReference<IChapter> ChapterReference { get; } = new EntityReference<IChapter>();
+
+            [DataMember]
+            [Obsolete("Use ChapterReference instead.")]
+            public Guid ChapterGuid
+            {
+                get => ChapterReference.Id;
+                set => ChapterReference.Set(value);
+            }
 
             public Metadata Metadata { get; set; }
 
@@ -39,7 +51,7 @@ namespace VRBuilder.Core.Behaviors
 
         public GoToChapterBehavior(Guid chapterGuid)
         {
-            Data.ChapterGuid = chapterGuid;
+            Data.ChapterReference.Set(chapterGuid);
         }
 
         private class ActivatingProcess : StageProcess<EntityData>
@@ -51,12 +63,13 @@ namespace VRBuilder.Core.Behaviors
             /// <inheritdoc />
             public override void Start()
             {
-                if (Data.ChapterGuid == null || Data.ChapterGuid == Guid.Empty)
+                Guid chapterId = Data.ChapterReference.Id;
+                if (chapterId == Guid.Empty)
                 {
                     return;
                 }
 
-                IChapter chapter = ProcessRunner.Current.Data.Chapters.FirstOrDefault(chapter => chapter.ChapterMetadata.Guid == Data.ChapterGuid);
+                IChapter chapter = ProcessRunner.Current.Data.Chapters.FirstOrDefault(chapter => chapter.Id == chapterId);
 
                 if (chapter != null)
                 {
@@ -88,5 +101,6 @@ namespace VRBuilder.Core.Behaviors
         {
             return new ActivatingProcess(Data);
         }
+
     }
 }

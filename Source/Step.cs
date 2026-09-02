@@ -251,6 +251,17 @@ namespace VRBuilder.Core
         [DataMember]
         public StepMetadata StepMetadata { get; set; }
 
+        /// <inheritdoc />
+        public override void RegenerateId()
+        {
+            base.RegenerateId();
+
+            if (StepMetadata != null)
+            {
+                StepMetadata.Guid = Id;
+            }
+        }
+
         ///<inheritdoc />
         public override IStageProcess GetActivatingProcess()
         {
@@ -282,22 +293,6 @@ namespace VRBuilder.Core
         }
 
         ///<inheritdoc />
-        public IStep Clone()
-        {
-            Step clonedStep = new Step(Data.Name);
-            clonedStep.StepMetadata.Position = StepMetadata.Position;
-            clonedStep.StepMetadata.StepType = StepMetadata.StepType;
-            clonedStep.Data.Transitions = Data.Transitions.Clone();
-            clonedStep.Data.Behaviors = Data.Behaviors.Clone();
-            clonedStep.Data.Name = Data.Name;
-            clonedStep.Data.Description = Data.Description;
-            clonedStep.Data.ToUnlock = new List<LockablePropertyReference>(Data.ToUnlock);
-            clonedStep.Data.GroupsToUnlock = new Dictionary<Guid, IEnumerable<Type>>(Data.GroupsToUnlock);
-
-            return clonedStep;
-        }
-
-        ///<inheritdoc />
         IStepData IDataOwner<IStepData>.Data
         {
             get { return Data; }
@@ -310,7 +305,7 @@ namespace VRBuilder.Core
         public Step(string name)
         {
             StepMetadata = new StepMetadata();
-            StepMetadata.Guid = Guid.NewGuid();
+            StepMetadata.Guid = Id;
 
             Data.Transitions = new TransitionCollection();
             Data.Behaviors = new BehaviorCollection();
@@ -319,6 +314,21 @@ namespace VRBuilder.Core
             if (LifeCycleLoggingConfig.Instance.LogSteps)
             {
                 LifeCycle.StageChanged += (sender, args) => { Debug.LogFormat("{0}<b>Step</b> <i>'{1}'</i> is <b>{2}</b>.\n", ConsoleUtils.GetTabs(), Data.Name, LifeCycle.Stage); };
+            }
+        }
+
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext context)
+        {
+            StepMetadata = StepMetadata ?? new StepMetadata();
+
+            if (StepMetadata.Guid == Guid.Empty)
+            {
+                StepMetadata.Guid = Id;
+            }
+            else
+            {
+                SetId(StepMetadata.Guid);
             }
         }
     }

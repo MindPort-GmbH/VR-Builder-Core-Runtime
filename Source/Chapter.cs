@@ -88,7 +88,7 @@ namespace VRBuilder.Core
                 {
                     yield return current;
 
-                    current = current.Data.Transitions.Data.Transitions.First(transition => transition.IsCompleted).Data.TargetStep;
+                    current = current.Data.Transitions.Data.Transitions.First(transition => transition.IsCompleted).Data.TargetStepReference.Entity;
                 }
             }
 
@@ -141,7 +141,7 @@ namespace VRBuilder.Core
                     return;
                 }
 
-                if (Data.Current.FindPathInGraph(step => step.Data.Transitions.Data.Transitions.Select(transition => transition.Data.TargetStep), null, out IList<IStep> pathToChapterEnd) == false)
+                if (Data.Current.FindPathInGraph(step => step.Data.Transitions.Data.Transitions.Select(transition => transition.Data.TargetStepReference.Entity), null, out IList<IStep> pathToChapterEnd) == false)
                 {
                     throw new InvalidStateException("The end of the chapter is not reachable from the current step.");
                 }
@@ -155,7 +155,7 @@ namespace VRBuilder.Core
 
                     Data.Current.LifeCycle.MarkToFastForward();
 
-                    ITransition toAutocomplete = Data.Current.Data.Transitions.Data.Transitions.First(transition => transition.Data.TargetStep == step);
+                    ITransition toAutocomplete = Data.Current.Data.Transitions.Data.Transitions.First(transition => transition.Data.TargetStepReference.Entity == step);
                     if (toAutocomplete.IsCompleted == false)
                     {
                         toAutocomplete.Autocomplete();
@@ -171,6 +171,17 @@ namespace VRBuilder.Core
         /// <inheritdoc />
         [DataMember]
         public ChapterMetadata ChapterMetadata { get; set; }
+
+        /// <inheritdoc />
+        public override void RegenerateId()
+        {
+            base.RegenerateId();
+
+            if (ChapterMetadata != null)
+            {
+                ChapterMetadata.Guid = Id;
+            }
+        }
 
         /// <inheritdoc />
         public override IStageProcess GetActivatingProcess()
@@ -197,37 +208,6 @@ namespace VRBuilder.Core
         }
 
         /// <inheritdoc />
-        public IChapter Clone()
-        {
-            IChapter clonedChapter = new Chapter(Data.Name, null);
-            clonedChapter.ChapterMetadata.EntryNodePosition = ChapterMetadata.EntryNodePosition;
-
-            Dictionary<IStep, IStep> clonedSteps = new Dictionary<IStep, IStep>();
-
-            foreach (IStep step in Data.Steps)
-            {
-                IStep clonedStep = step.Clone();
-                clonedChapter.Data.Steps.Add(clonedStep);
-                if (Data.FirstStep == step)
-                {
-                    clonedChapter.Data.FirstStep = clonedStep;
-                }
-
-                clonedSteps.Add(step, clonedStep);
-            }
-
-            foreach (ITransition transition in clonedChapter.Data.Steps.SelectMany(step => step.Data.Transitions.Data.Transitions))
-            {
-                if (transition.Data.TargetStep != null && clonedSteps.ContainsKey(transition.Data.TargetStep))
-                {
-                    transition.Data.TargetStep = clonedSteps[transition.Data.TargetStep];
-                }
-            }
-
-            return clonedChapter;
-        }
-
-        /// <inheritdoc />
         IChapterData IDataOwner<IChapterData>.Data
         {
             get { return Data; }
@@ -240,7 +220,7 @@ namespace VRBuilder.Core
         public Chapter(string name, IStep firstStep)
         {
             ChapterMetadata = new ChapterMetadata();
-            ChapterMetadata.Guid = Guid.NewGuid();
+            ChapterMetadata.Guid = Id;
 
             Data.Name = name;
             Data.FirstStep = firstStep;
@@ -257,6 +237,21 @@ namespace VRBuilder.Core
                 {
                     Debug.LogFormat("<b>Chapter</b> <i>'{0}'</i> is <b>{1}</b>.\n", Data.Name, LifeCycle.Stage.ToString());
                 };
+            }
+        }
+
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext context)
+        {
+            ChapterMetadata = ChapterMetadata ?? new ChapterMetadata();
+
+            if (ChapterMetadata.Guid == Guid.Empty)
+            {
+                ChapterMetadata.Guid = Id;
+            }
+            else
+            {
+                SetId(ChapterMetadata.Guid);
             }
         }
     }

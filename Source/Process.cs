@@ -76,6 +76,17 @@ namespace VRBuilder.Core
         [DataMember]
         public ProcessMetadata ProcessMetadata { get; set; }
 
+        /// <inheritdoc />
+        public override void RegenerateId()
+        {
+            base.RegenerateId();
+
+            if (ProcessMetadata != null)
+            {
+                ProcessMetadata.Guid = Id;
+            }
+        }
+
         private class ActivatingProcess : EntityIteratingProcess<IEntityNonLinearSequenceDataWithMode<IChapter>, IChapter>
         {
             private List<IChapter> chapters;
@@ -151,13 +162,6 @@ namespace VRBuilder.Core
             return new ParallelAbortingProcess<EntityData>(Data);
         }
 
-        /// <inheritdoc />
-        public IProcess Clone()
-        {
-            IEnumerable<IChapter> clonedChapters = Data.Chapters.Select(chapter => chapter.Clone());
-            return new Process(Data.Name, clonedChapters);
-        }
-
         protected Process() : this(null, Array.Empty<IChapter>())
         {
         }
@@ -169,10 +173,25 @@ namespace VRBuilder.Core
         public Process(string name, IEnumerable<IChapter> chapters)
         {
             ProcessMetadata = new ProcessMetadata();
-            ProcessMetadata.Guid = Guid.NewGuid();
+            ProcessMetadata.Guid = Id;
 
             Data.Chapters = chapters.ToList();
             Data.Name = name;
+        }
+
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext context)
+        {
+            ProcessMetadata = ProcessMetadata ?? new ProcessMetadata();
+
+            if (ProcessMetadata.Guid == Guid.Empty)
+            {
+                ProcessMetadata.Guid = Id;
+            }
+            else
+            {
+                SetId(ProcessMetadata.Guid);
+            }
         }
     }
 }

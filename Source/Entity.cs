@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0
 // Modifications copyright (c) 2021-2026 MindPort GmbH
 
+using System;
 using System.Linq;
 using System.Runtime.Serialization;
 using VRBuilder.Core.Configuration.Modes;
@@ -16,6 +17,10 @@ namespace VRBuilder.Core
     [DataContract(IsReference = true)]
     public abstract class Entity<TData> : IEntity, IDataOwner<TData> where TData : class, IData, new()
     {
+        /// <inheritdoc />
+        [DataMember]
+        public Guid Id { get; private set; }
+
         /// <inheritdoc />
         [DataMember]
         public TData Data { get; private set; }
@@ -36,8 +41,23 @@ namespace VRBuilder.Core
 
         protected Entity()
         {
+            Id = Guid.NewGuid();
             LifeCycle = new LifeCycle(this);
             Data = new TData();
+        }
+
+        /// <inheritdoc />
+        public virtual void RegenerateId()
+        {
+            Id = Guid.NewGuid();
+        }
+
+        /// <summary>
+        /// Sets the entity identifier during migration from legacy metadata.
+        /// </summary>
+        protected void SetId(Guid id)
+        {
+            Id = id;
         }
 
         /// <inheritdoc />
@@ -112,5 +132,6 @@ namespace VRBuilder.Core
                 }
             }
         }
+
     }
 }

@@ -233,5 +233,6 @@ namespace VRBuilder.Core.Behaviors
         {
             return new SequenceConfigurator<IBehavior>(Data);
         }
+
     }
 }

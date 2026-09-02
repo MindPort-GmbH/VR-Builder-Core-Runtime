@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using UnityEngine;
 using VRBuilder.Core.Attributes;
+using VRBuilder.Core.Cloning;
 using VRBuilder.Core.Conditions;
 using VRBuilder.Core.Configuration.Modes;
 using VRBuilder.Core.EntityOwners;
@@ -40,10 +41,22 @@ namespace VRBuilder.Core
                 return Conditions.ToArray();
             }
 
+            /// <summary>
+            /// Clone-aware reference to the target step.
+            /// </summary>
+            [HideInProcessInspector]
+            [DataMember]
+            public EntityReference<IStep> TargetStepReference { get; } = new EntityReference<IStep>();
+
             ///<inheritdoc />
             [HideInProcessInspector]
             [DataMember]
-            public IStep TargetStep { get; set; }
+            [System.Obsolete("Use TargetStepReference instead.")]
+            public IStep TargetStep
+            {
+                get => TargetStepReference.Entity;
+                set => TargetStepReference.Set(value);
+            }
 
             ///<inheritdoc />
             public IMode Mode { get; set; }
@@ -170,13 +183,14 @@ namespace VRBuilder.Core
         public Transition()
         {
             Data.Conditions = new List<ICondition>();
-            Data.TargetStep = null;
+            Data.TargetStepReference.Set(null);
 
             if (LifeCycleLoggingConfig.Instance.LogTransitions)
             {
                 LifeCycle.StageChanged += (sender, args) =>
                 {
-                    Debug.LogFormat("{0}<b>Transition to</b> <i>{1}</i> is <b>{2}</b>.\n", ConsoleUtils.GetTabs(3), Data.TargetStep != null ? Data.TargetStep.Data.Name + " (Step)" : "chapter's end", LifeCycle.Stage);
+                    IStep targetStep = Data.TargetStepReference.Entity;
+                    Debug.LogFormat("{0}<b>Transition to</b> <i>{1}</i> is <b>{2}</b>.\n", ConsoleUtils.GetTabs(3), targetStep != null ? targetStep.Data.Name + " (Step)" : "chapter's end", LifeCycle.Stage);
                 };
             }
         }
@@ -195,13 +209,5 @@ namespace VRBuilder.Core
             return lockable;
         }
 
-        /// <inheritdoc />
-        public ITransition Clone()
-        {
-            Transition clonedTransition = new Transition();
-            clonedTransition.Data.Conditions = Data.Conditions.Select(condition => condition.Clone()).ToList();
-            clonedTransition.Data.TargetStep = Data.TargetStep;
-            return clonedTransition;
-        }
     }
 }
