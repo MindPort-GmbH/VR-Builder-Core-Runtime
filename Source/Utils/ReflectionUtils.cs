@@ -49,7 +49,7 @@ namespace VRBuilder.Core.Utils
             Type entryDeclaredType = typeof(object);
             Type genericListType = null;
 
-            if (listType.GetGenericTypeDefinition() == typeof(IList<>))
+            if (listType.IsGenericType && listType.GetGenericTypeDefinition() == typeof(IList<>))
             {
                 genericListType = listType;
             }
