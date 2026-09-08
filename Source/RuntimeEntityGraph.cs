@@ -58,11 +58,11 @@ namespace VRBuilder.Core
         }
 
         /// <summary>
-        /// Materializes a collection with the same stable first-occurrence semantics as Distinct().
+        /// Materializes every collection entry in order, including repeated entities used by sequences.
         /// </summary>
         public static IEntity[] Snapshot(IEntityCollectionData data)
         {
-            return data.GetChildren().Distinct().ToArray();
+            return data.GetChildren().ToArray();
         }
     }
 }

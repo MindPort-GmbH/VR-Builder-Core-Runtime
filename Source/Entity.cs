@@ -174,12 +174,14 @@ namespace VRBuilder.Core
                 IRuntimeEntityCollectionData runtimeData = Data as IRuntimeEntityCollectionData;
                 if (runtimeData != null && runtimeData.IsRuntimeGraphPrepared)
                 {
-                    runtimeChildren = runtimeData.RuntimeChildren;
+                    runtimeChildren = runtimeData.RuntimeChildren.Distinct().ToArray();
                 }
                 else
                 {
-                    runtimeChildren = RuntimeEntityGraph.Snapshot(collectionData);
-                    runtimeData?.SetRuntimeChildren(runtimeChildren);
+                    IEntity[] orderedChildren = RuntimeEntityGraph.Snapshot(collectionData);
+                    runtimeData?.SetRuntimeChildren(orderedChildren);
+                    // Execution preserves repeated entries; configuration and updates visit each entity once.
+                    runtimeChildren = orderedChildren.Distinct().ToArray();
                 }
             }
             else
