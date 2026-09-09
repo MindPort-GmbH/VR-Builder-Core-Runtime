@@ -72,30 +72,17 @@ namespace VRBuilder.Core
         private class ActivatingProcess : EntityIteratingProcess<IEntitySequenceDataWithMode<IStep>, IStep>
         {
             private readonly IStep firstStep;
+            private bool hasStarted;
 
             public ActivatingProcess(IChapterData data) : base(data)
             {
                 firstStep = data.FirstStep;
             }
 
-            private IEnumerator<IStep> enumerator;
-
-            private IEnumerator<IStep> GetChildren()
-            {
-                IStep current = firstStep;
-
-                while (current != null)
-                {
-                    yield return current;
-
-                    current = current.Data.Transitions.Data.Transitions.First(transition => transition.IsCompleted).Data.TargetStepReference.Entity;
-                }
-            }
-
             /// <inheritdoc />
             public override void Start()
             {
-                enumerator = GetChildren();
+                hasStarted = false;
                 base.Start();
             }
 
@@ -108,29 +95,30 @@ namespace VRBuilder.Core
             /// <inheritdoc />
             protected override bool ShouldDeactivateCurrent()
             {
-                return Data.Current.Data.Transitions.Data.Transitions.Any(transition => transition.IsCompleted);
+                return FindCompletedTransition(Data.Current) != null;
             }
 
             /// <inheritdoc />
             public override void End()
             {
-                enumerator = null;
                 base.End();
             }
 
             /// <inheritdoc />
             protected override bool TryNext(out IStep entity)
             {
-                if (enumerator != null && enumerator.MoveNext())
+                if (hasStarted == false)
                 {
-                    entity = enumerator.Current;
-                    return true;
+                    hasStarted = true;
+                    entity = firstStep;
                 }
                 else
                 {
-                    entity = null;
-                    return false;
+                    ITransition transition = FindCompletedTransition(Data.Current);
+                    entity = transition?.Data.TargetStepReference.Entity;
                 }
+
+                return entity != null;
             }
 
             /// <inheritdoc />
@@ -155,7 +143,7 @@ namespace VRBuilder.Core
 
                     Data.Current.LifeCycle.MarkToFastForward();
 
-                    ITransition toAutocomplete = Data.Current.Data.Transitions.Data.Transitions.First(transition => transition.Data.TargetStepReference.Entity == step);
+                    ITransition toAutocomplete = FindTransitionTo(Data.Current, step);
                     if (toAutocomplete.IsCompleted == false)
                     {
                         toAutocomplete.Autocomplete();
@@ -165,6 +153,41 @@ namespace VRBuilder.Core
 
                     Data.Current = step;
                 }
+            }
+
+            private static ITransition FindCompletedTransition(IStep step)
+            {
+                if (step == null)
+                {
+                    return null;
+                }
+
+                IEntity[] transitions = RuntimeEntityGraph.GetChildren(step.Data.Transitions.Data);
+                for (int i = 0; i < transitions.Length; i++)
+                {
+                    ITransition transition = (ITransition)transitions[i];
+                    if (transition.IsCompleted)
+                    {
+                        return transition;
+                    }
+                }
+
+                return null;
+            }
+
+            private static ITransition FindTransitionTo(IStep source, IStep target)
+            {
+                IEntity[] transitions = RuntimeEntityGraph.GetChildren(source.Data.Transitions.Data);
+                for (int i = 0; i < transitions.Length; i++)
+                {
+                    ITransition transition = (ITransition)transitions[i];
+                    if (transition.Data.TargetStepReference.Entity == target)
+                    {
+                        return transition;
+                    }
+                }
+
+                throw new InvalidOperationException("No transition to the requested step was found.");
             }
         }
 

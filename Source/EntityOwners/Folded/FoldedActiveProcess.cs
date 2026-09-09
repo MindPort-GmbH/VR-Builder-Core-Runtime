@@ -3,7 +3,6 @@
 // Modifications copyright (c) 2021-2026 MindPort GmbH
 
 using System.Collections;
-using System.Linq;
 
 namespace VRBuilder.Core.EntityOwners.FoldedEntityCollection
 {
@@ -24,11 +23,14 @@ namespace VRBuilder.Core.EntityOwners.FoldedEntityCollection
         /// <inheritdoc />
         public override IEnumerator Update()
         {
-            foreach (TEntity child in Data.GetChildren()
-                .Where(child => child.LifeCycle.Stage == Stage.Active)
-                .Where(child => Data.Mode.CheckIfSkipped(child.GetType())))
+            IEntity[] children = RuntimeEntityGraph.GetChildren(Data);
+            for (int i = 0; i < children.Length; i++)
             {
-                child.LifeCycle.MarkToFastForwardStage(Stage.Active);
+                TEntity child = (TEntity)children[i];
+                if (child.LifeCycle.Stage == Stage.Active && Data.Mode.CheckIfSkipped(child.GetType()))
+                {
+                    child.LifeCycle.MarkToFastForwardStage(Stage.Active);
+                }
             }
 
             yield break;
@@ -42,8 +44,10 @@ namespace VRBuilder.Core.EntityOwners.FoldedEntityCollection
         /// <inheritdoc />
         public override void FastForward()
         {
-            foreach (TEntity child in Data.GetChildren())
+            IEntity[] children = RuntimeEntityGraph.GetChildren(Data);
+            for (int i = 0; i < children.Length; i++)
             {
+                TEntity child = (TEntity)children[i];
                 if (child.LifeCycle.Stage == Stage.Active)
                 {
                     child.LifeCycle.MarkToFastForwardStage(Stage.Active);

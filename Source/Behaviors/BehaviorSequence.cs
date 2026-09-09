@@ -90,8 +90,8 @@ namespace VRBuilder.Core.Behaviors
 
         private class IteratingProcess : EntityIteratingProcess<IEntitySequenceDataWithMode<IBehavior>, IBehavior>
         {
-            private IEnumerator<IBehavior> enumerator;
-
+            private IEntity[] children;
+            private int currentIndex;
 
             public IteratingProcess(IEntitySequenceDataWithMode<IBehavior> data) : base(data)
             {
@@ -101,7 +101,8 @@ namespace VRBuilder.Core.Behaviors
             public override void Start()
             {
                 base.Start();
-                enumerator = Data.GetChildren().GetEnumerator();
+                children = RuntimeEntityGraph.GetChildren(Data);
+                currentIndex = 0;
             }
 
             /// <inheritdoc />
@@ -119,16 +120,14 @@ namespace VRBuilder.Core.Behaviors
             /// <inheritdoc />
             protected override bool TryNext(out IBehavior entity)
             {
-                if (enumerator == null || enumerator.MoveNext() == false)
+                if (children == null || currentIndex >= children.Length)
                 {
                     entity = default(IBehavior);
                     return false;
                 }
-                else
-                {
-                    entity = enumerator.Current;
-                    return true;
-                }
+
+                entity = (IBehavior)children[currentIndex++];
+                return true;
             }
         }
 

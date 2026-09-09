@@ -18,8 +18,10 @@ namespace VRBuilder.Core.EntityOwners
         /// <inheritdoc />
         public override void Configure(IMode mode, Stage stage)
         {
-            foreach (TEntity child in Data.GetChildren())
+            IEntity[] children = RuntimeEntityGraph.GetChildren(Data);
+            for (int i = 0; i < children.Length; i++)
             {
+                TEntity child = (TEntity)children[i];
                 if (child is IOptional)
                 {
                     bool wasSkipped = Data.Mode != null && Data.Mode.CheckIfSkipped(child.GetType());

@@ -89,7 +89,7 @@ namespace VRBuilder.Core
 
         private class ActivatingProcess : EntityIteratingProcess<IEntityNonLinearSequenceDataWithMode<IChapter>, IChapter>
         {
-            private List<IChapter> chapters;
+            private IEntity[] chapters;
             private int currentChapterIndex = 0;
 
             public ActivatingProcess(IEntityNonLinearSequenceDataWithMode<IChapter> data) : base(data)
@@ -100,7 +100,7 @@ namespace VRBuilder.Core
             public override void Start()
             {
                 base.Start();
-                chapters = Data.GetChildren().ToList();
+                chapters = RuntimeEntityGraph.GetChildren(Data);
             }
 
             /// <inheritdoc />
@@ -118,23 +118,45 @@ namespace VRBuilder.Core
             /// <inheritdoc />
             protected override bool TryNext(out IChapter entity)
             {
-                if (Data.OverrideNext != null && chapters.Contains(Data.OverrideNext))
+                if (Data.OverrideNext != null)
                 {
-                    currentChapterIndex = chapters.IndexOf(Data.OverrideNext);
-                    Data.OverrideNext = null;
+                    int overrideIndex = IndexOf(Data.OverrideNext);
+                    if (overrideIndex >= 0)
+                    {
+                        currentChapterIndex = overrideIndex;
+                        Data.OverrideNext = null;
+                    }
                 }
 
-                if (chapters == null || currentChapterIndex >= chapters.Count() || currentChapterIndex < 0)
+                if (chapters == null || currentChapterIndex >= chapters.Length || currentChapterIndex < 0)
                 {
                     entity = default;
                     return false;
                 }
                 else
                 {
-                    entity = chapters[currentChapterIndex];
+                    entity = (IChapter)chapters[currentChapterIndex];
                     currentChapterIndex++;
                     return true;
                 }
+            }
+
+            private int IndexOf(IChapter chapter)
+            {
+                if (chapters == null)
+                {
+                    return -1;
+                }
+
+                for (int i = 0; i < chapters.Length; i++)
+                {
+                    if (Equals(chapters[i], chapter))
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
             }
         }
 

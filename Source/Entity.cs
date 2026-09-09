@@ -15,8 +15,11 @@ namespace VRBuilder.Core
     /// offers member functions to trigger state changes.
     /// </summary>
     [DataContract(IsReference = true)]
-    public abstract class Entity<TData> : IEntity, IDataOwner<TData> where TData : class, IData, new()
+    public abstract class Entity<TData> : IEntity, IDataOwner<TData>, IRuntimeEntity where TData : class, IData, new()
     {
+        [IgnoreDataMember]
+        private IEntity[] runtimeChildren;
+
         /// <inheritdoc />
         [DataMember]
         public Guid Id { get; private set; }
@@ -98,10 +101,22 @@ namespace VRBuilder.Core
         {
             if (Data is IEntityCollectionData collectionData)
             {
-                foreach (IEntity child in collectionData.GetChildren().Distinct())
+                if (runtimeChildren == null)
                 {
-                    child.Parent = this;
-                    child.Configure(mode);
+                    foreach (IEntity child in collectionData.GetChildren().Distinct())
+                    {
+                        child.Parent = this;
+                        child.Configure(mode);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < runtimeChildren.Length; i++)
+                    {
+                        IEntity child = runtimeChildren[i];
+                        child.Parent = this;
+                        child.Configure(mode);
+                    }
                 }
             }
 
@@ -126,10 +141,57 @@ namespace VRBuilder.Core
             }
             else if (Data is IEntityCollectionData collectionData)
             {
-                foreach (IEntity child in collectionData.GetChildren().Distinct())
+                if (runtimeChildren == null)
                 {
-                    child.Update();
+                    foreach (IEntity child in collectionData.GetChildren().Distinct())
+                    {
+                        child.Update();
+                    }
                 }
+                else
+                {
+                    for (int i = 0; i < runtimeChildren.Length; i++)
+                    {
+                        runtimeChildren[i].Update();
+                    }
+                }
+            }
+        }
+
+        bool IRuntimeEntity.IsRuntimeGraphPrepared => runtimeChildren != null;
+
+        IEntity[] IRuntimeEntity.RuntimeChildren => runtimeChildren ?? System.Array.Empty<IEntity>();
+
+        void IRuntimeEntity.PrepareRuntimeGraph()
+        {
+            if (runtimeChildren != null)
+            {
+                return;
+            }
+
+            if (Data is IEntityCollectionData collectionData)
+            {
+                IRuntimeEntityCollectionData runtimeData = Data as IRuntimeEntityCollectionData;
+                if (runtimeData != null && runtimeData.IsRuntimeGraphPrepared)
+                {
+                    runtimeChildren = runtimeData.RuntimeChildren.Distinct().ToArray();
+                }
+                else
+                {
+                    IEntity[] orderedChildren = RuntimeEntityGraph.Snapshot(collectionData);
+                    runtimeData?.SetRuntimeChildren(orderedChildren);
+                    // Execution preserves repeated entries; configuration and updates visit each entity once.
+                    runtimeChildren = orderedChildren.Distinct().ToArray();
+                }
+            }
+            else
+            {
+                runtimeChildren = System.Array.Empty<IEntity>();
+            }
+
+            for (int i = 0; i < runtimeChildren.Length; i++)
+            {
+                RuntimeEntityGraph.Prepare(runtimeChildren[i]);
             }
         }
 
