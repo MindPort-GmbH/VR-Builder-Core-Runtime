@@ -240,9 +240,13 @@ namespace VRBuilder.Core
         }
 
         /// <summary>
-        /// Skips the current step and uses given transition.
+        /// Skips the current step using the given transition.
         /// </summary>
-        /// <param name="transition">Transition which should be used.</param>
+        /// <remarks>
+        /// The transition must belong to the current step. Completed competing transitions are reset so the explicitly
+        /// selected transition determines which step is activated next.
+        /// </remarks>
+        /// <param name="transition">Transition from the current step which should be used.</param>
         public static void SkipStep(ITransition transition)
         {
             if (IsRunning == false)
@@ -250,7 +254,22 @@ namespace VRBuilder.Core
                 return;
             }
 
-            Current.Data.Current.Data.Current.LifeCycle.MarkToFastForward();
+            IStep currentStep = Current.Data.Current.Data.Current;
+            if (currentStep.Data.Transitions.Data.Transitions.Contains(transition) == false)
+            {
+                Debug.LogWarning($"Cannot skip step '{currentStep.Data.Name}' because the selected transition does not belong to it.");
+                return;
+            }
+
+            foreach (ITransition currentTransition in currentStep.Data.Transitions.Data.Transitions)
+            {
+                if (ReferenceEquals(currentTransition, transition) == false)
+                {
+                    currentTransition.Data.IsCompleted = false;
+                }
+            }
+
+            currentStep.LifeCycle.MarkToFastForward();
             transition.Autocomplete();
 
             Events.FastForwardStep?.Invoke(instance, new FastForwardProcessEventArgs(transition, Current));
