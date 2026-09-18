@@ -69,8 +69,15 @@ namespace VRBuilder.Core.Serialization
                 Debug.LogError(ex.Message);
             }
 
-            // This line is required to undo the changes applied to the process.
-            wrapper.GetProcess();
+            try
+            {
+                // Undo the temporary graph changes applied for serialization.
+                wrapper.GetProcess();
+            }
+            finally
+            {
+                wrapper.RestoreSelectedSteps();
+            }
 
             return bytes;
         }
@@ -117,8 +124,15 @@ namespace VRBuilder.Core.Serialization
                 Debug.LogError(ex.Message);
             }
 
-            // This line is required to undo the changes applied to the process.
-            wrapper.GetChapter();
+            try
+            {
+                // Undo the temporary graph changes applied for serialization.
+                wrapper.GetChapter();
+            }
+            finally
+            {
+                wrapper.RestoreSelectedSteps();
+            }
 
             return bytes;
         }
@@ -142,7 +156,7 @@ namespace VRBuilder.Core.Serialization
             public ChapterWrapper(IChapter chapter)
             {
                 // Set LastSelectedStep to null, to prevent it needlessly serializing a full step tree.
-                chapter.ChapterMetadata.LastSelectedStep = null;
+                ClearLastSelectedStep(chapter);
 
                 Steps.AddRange(GetSteps(chapter));
                 SubChapters.AddRange(GetSubChapters(chapter));
@@ -162,7 +176,7 @@ namespace VRBuilder.Core.Serialization
                 foreach (IChapter subChapter in SubChapters)
                 {
                     // Set LastSelectedStep to null, to prevent it needlessly serializing a full step tree.
-                    subChapter.ChapterMetadata.LastSelectedStep = null;
+                    ClearLastSelectedStep(subChapter);
 
                     List<IStep> stepRefs = new List<IStep>();
                     foreach (IStep step in subChapter.Data.Steps)
@@ -241,7 +255,7 @@ namespace VRBuilder.Core.Serialization
                 foreach (IChapter chapter in process.Data.Chapters)
                 {
                     // Set LastSelectedStep to null, to prevent it needlessly serializing a full step tree.
-                    chapter.ChapterMetadata.LastSelectedStep = null;
+                    ClearLastSelectedStep(chapter);
 
                     Steps.AddRange(GetSteps(chapter));
                     SubChapters.AddRange(GetSubChapters(chapter));
@@ -262,7 +276,7 @@ namespace VRBuilder.Core.Serialization
                 foreach (IChapter subChapter in SubChapters)
                 {
                     // Set LastSelectedStep to null, to prevent it needlessly serializing a full step tree.
-                    subChapter.ChapterMetadata.LastSelectedStep = null;
+                    ClearLastSelectedStep(subChapter);
 
                     List<IStep> stepRefs = new List<IStep>();
                     foreach (IStep step in subChapter.Data.Steps)
@@ -322,6 +336,29 @@ namespace VRBuilder.Core.Serialization
 
         private class Wrapper
         {
+            [JsonIgnore]
+            private readonly Dictionary<IChapter, IStep> selectedSteps = new Dictionary<IChapter, IStep>();
+
+            protected void ClearLastSelectedStep(IChapter chapter)
+            {
+                if (!selectedSteps.ContainsKey(chapter))
+                {
+                    selectedSteps.Add(chapter, chapter.ChapterMetadata.LastSelectedStep);
+                }
+
+                chapter.ChapterMetadata.LastSelectedStep = null;
+            }
+
+            public void RestoreSelectedSteps()
+            {
+                foreach (KeyValuePair<IChapter, IStep> selection in selectedSteps)
+                {
+                    selection.Key.ChapterMetadata.LastSelectedStep = selection.Value;
+                }
+
+                selectedSteps.Clear();
+            }
+
             protected IEnumerable<IStep> GetSteps(IChapter chapter)
             {
                 List<IStep> steps = new List<IStep>();
