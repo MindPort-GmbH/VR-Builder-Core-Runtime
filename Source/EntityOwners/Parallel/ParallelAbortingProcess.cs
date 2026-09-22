@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Linq;
 
 namespace VRBuilder.Core.EntityOwners.ParallelEntityCollection
 {
@@ -23,18 +22,36 @@ namespace VRBuilder.Core.EntityOwners.ParallelEntityCollection
         /// <inheritdoc />
         public override void Start()
         {
-            foreach (IEntity child in Data.GetChildren().Where(child => child.LifeCycle.Stage != Stage.Inactive))
+            IEntity[] children = RuntimeEntityGraph.GetChildren(Data);
+            for (int i = 0; i < children.Length; i++)
             {
-                child.LifeCycle.Abort();
+                if (children[i].LifeCycle.Stage != Stage.Inactive)
+                {
+                    children[i].LifeCycle.Abort();
+                }
             }
         }
 
         public override IEnumerator Update()
         {
-            while (Data.GetChildren().Any(child => child.LifeCycle.Stage != Stage.Inactive))
+            while (HasActiveChild())
             {
                 yield return null;
             }
+        }
+
+        private bool HasActiveChild()
+        {
+            IEntity[] children = RuntimeEntityGraph.GetChildren(Data);
+            for (int i = 0; i < children.Length; i++)
+            {
+                if (children[i].LifeCycle.Stage != Stage.Inactive)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

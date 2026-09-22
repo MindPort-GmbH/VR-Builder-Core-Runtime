@@ -2,16 +2,21 @@
 // Licensed under the Apache License, Version 2.0
 // Modifications copyright (c) 2021-2026 MindPort GmbH
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 
 namespace VRBuilder.Core.EntityOwners
 {
     /// <summary>
     /// A base class for data classes that are collections of other entities.
     /// </summary>
-    public abstract class EntityCollectionData<TEntity> : IEntityCollectionData<TEntity> where TEntity : IEntity
+    public abstract class EntityCollectionData<TEntity> : IEntityCollectionData<TEntity>, IRuntimeEntityCollectionData where TEntity : IEntity
     {
+        [IgnoreDataMember]
+        private IEntity[] runtimeChildren;
+
         /// <inheritdoc />
         public Metadata Metadata { get; set; }
 
@@ -22,6 +27,18 @@ namespace VRBuilder.Core.EntityOwners
         IEnumerable<IEntity> IEntityCollectionData.GetChildren()
         {
             return GetChildren().Cast<IEntity>();
+        }
+
+        bool IRuntimeEntityCollectionData.IsRuntimeGraphPrepared => runtimeChildren != null;
+
+        IEntity[] IRuntimeEntityCollectionData.RuntimeChildren => runtimeChildren ?? Array.Empty<IEntity>();
+
+        void IRuntimeEntityCollectionData.SetRuntimeChildren(IEntity[] children)
+        {
+            if (runtimeChildren == null)
+            {
+                runtimeChildren = children;
+            }
         }
     }
 }

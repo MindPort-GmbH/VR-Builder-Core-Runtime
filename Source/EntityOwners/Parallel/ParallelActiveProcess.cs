@@ -3,7 +3,6 @@
 // Modifications copyright (c) 2021-2026 MindPort GmbH
 
 using System.Collections;
-using System.Linq;
 using VRBuilder.Core.Configuration.Modes;
 
 namespace VRBuilder.Core.EntityOwners.ParallelEntityCollection
@@ -41,9 +40,13 @@ namespace VRBuilder.Core.EntityOwners.ParallelEntityCollection
         /// <inheritdoc />
         public override void FastForward()
         {
-            foreach (IEntity child in Data.GetChildren().Where(child => child.LifeCycle.Stage == Stage.Activating))
+            IEntity[] children = RuntimeEntityGraph.GetChildren(Data);
+            for (int i = 0; i < children.Length; i++)
             {
-                child.LifeCycle.MarkToFastForwardStage(Stage.Activating);
+                if (children[i].LifeCycle.Stage == Stage.Activating)
+                {
+                    children[i].LifeCycle.MarkToFastForwardStage(Stage.Activating);
+                }
             }
         }
     }

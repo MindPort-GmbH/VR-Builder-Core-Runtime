@@ -107,9 +107,10 @@ namespace VRBuilder.Core.RestrictiveEnvironment
 
         private IStepData GetNextStep(ITransition completedTransition)
         {
-            if (completedTransition.Data.TargetStep != null)
+            IStep targetStep = completedTransition.Data.TargetStepReference.Entity;
+            if (targetStep != null)
             {
-                return completedTransition.Data.TargetStep.Data;
+                return targetStep.Data;
             }
 
             if (ProcessRunner.IsRunning == false)

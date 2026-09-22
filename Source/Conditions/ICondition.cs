@@ -4,7 +4,7 @@
 
 namespace VRBuilder.Core.Conditions
 {
-    public interface ICondition: ICompletableEntity, IDataOwner<IConditionData>, IClonable<ICondition>
+    public interface ICondition: ICompletableEntity, IDataOwner<IConditionData>
     {
     }
 }

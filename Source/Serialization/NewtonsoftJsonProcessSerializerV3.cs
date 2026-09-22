@@ -82,9 +82,10 @@ namespace VRBuilder.Core.Serialization
                 {
                     foreach (ITransition transition in step.Data.Transitions.Data.Transitions)
                     {
-                        if (transition.Data.TargetStep != null)
+                        IStep targetStep = transition.Data.TargetStepReference.Entity;
+                        if (targetStep != null)
                         {
-                            transition.Data.TargetStep = new StepRef() { PositionIndex = Steps.IndexOf(transition.Data.TargetStep) };
+                            transition.Data.TargetStepReference.Set(new StepRef() { PositionIndex = Steps.IndexOf(targetStep) });
                         }
                     }
                 }
@@ -97,13 +98,10 @@ namespace VRBuilder.Core.Serialization
                 {
                     foreach (ITransition transition in step.Data.Transitions.Data.Transitions)
                     {
-                        if (transition.Data.TargetStep == null)
+                        if (transition.Data.TargetStepReference.Entity is StepRef stepRef)
                         {
-                            continue;
+                            transition.Data.TargetStepReference.Set(stepRef.PositionIndex >= 0 ? Steps[stepRef.PositionIndex] : null);
                         }
-
-                        StepRef stepRef = (StepRef)transition.Data.TargetStep;
-                        transition.Data.TargetStep = stepRef.PositionIndex >= 0 ? Steps[stepRef.PositionIndex] : null;
                     }
                 }
 
@@ -141,6 +139,14 @@ namespace VRBuilder.Core.Serialization
 
                 public ILifeCycle LifeCycle { get; } = null;
 
+                [JsonIgnore]
+                public Guid Id { get; } = Guid.NewGuid();
+
+                public void RegenerateId()
+                {
+                    throw new NotImplementedException();
+                }
+
                 public IStageProcess GetActivatingProcess()
                 {
                     throw new NotImplementedException();
@@ -166,17 +172,13 @@ namespace VRBuilder.Core.Serialization
                     throw new NotImplementedException();
                 }
 
-                public IStep Clone()
-                {
-                    throw new NotImplementedException();
-                }
-
                 public IStageProcess GetAbortingProcess()
                 {
                     throw new NotImplementedException();
                 }
 
                 public StepMetadata StepMetadata { get; set; }
+                [JsonIgnore]
                 public IEntity Parent { get; set; }
             }
         }

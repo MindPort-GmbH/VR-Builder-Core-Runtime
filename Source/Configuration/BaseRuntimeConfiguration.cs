@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
+using VRBuilder.Core.Cloning;
 using VRBuilder.Core.Configuration.Modes;
 using VRBuilder.Core.IO;
 using VRBuilder.Core.RestrictiveEnvironment;
@@ -47,7 +48,12 @@ namespace VRBuilder.Core.Configuration
         }
 
         /// <inheritdoc />
-        public IProcessSerializer Serializer { get; set; } = new NewtonsoftJsonProcessSerializerV4();
+        public IProcessSerializer Serializer { get; } = new NewtonsoftJsonProcessSerializerV4();
+
+        /// <summary>
+        /// Service used to create independent copies of entity graphs.
+        /// </summary>
+        public IEntityCloner EntityCloner { get; }
 
         /// <summary>
         /// Default input action asset which is used when no customization of key bindings are done.
@@ -169,6 +175,7 @@ namespace VRBuilder.Core.Configuration
         protected BaseRuntimeConfiguration(StepLockHandlingStrategy lockHandling)
         {
             StepLockHandling = lockHandling;
+            EntityCloner = new SerializerBackedEntityCloner(Serializer);
         }
 
         /// <inheritdoc />

@@ -72,30 +72,17 @@ namespace VRBuilder.Core
         private class ActivatingProcess : EntityIteratingProcess<IEntitySequenceDataWithMode<IStep>, IStep>
         {
             private readonly IStep firstStep;
+            private bool hasStarted;
 
             public ActivatingProcess(IChapterData data) : base(data)
             {
                 firstStep = data.FirstStep;
             }
 
-            private IEnumerator<IStep> enumerator;
-
-            private IEnumerator<IStep> GetChildren()
-            {
-                IStep current = firstStep;
-
-                while (current != null)
-                {
-                    yield return current;
-
-                    current = current.Data.Transitions.Data.Transitions.First(transition => transition.IsCompleted).Data.TargetStep;
-                }
-            }
-
             /// <inheritdoc />
             public override void Start()
             {
-                enumerator = GetChildren();
+                hasStarted = false;
                 base.Start();
             }
 
@@ -108,29 +95,30 @@ namespace VRBuilder.Core
             /// <inheritdoc />
             protected override bool ShouldDeactivateCurrent()
             {
-                return Data.Current.Data.Transitions.Data.Transitions.Any(transition => transition.IsCompleted);
+                return FindCompletedTransition(Data.Current) != null;
             }
 
             /// <inheritdoc />
             public override void End()
             {
-                enumerator = null;
                 base.End();
             }
 
             /// <inheritdoc />
             protected override bool TryNext(out IStep entity)
             {
-                if (enumerator != null && enumerator.MoveNext())
+                if (hasStarted == false)
                 {
-                    entity = enumerator.Current;
-                    return true;
+                    hasStarted = true;
+                    entity = firstStep;
                 }
                 else
                 {
-                    entity = null;
-                    return false;
+                    ITransition transition = FindCompletedTransition(Data.Current);
+                    entity = transition?.Data.TargetStepReference.Entity;
                 }
+
+                return entity != null;
             }
 
             /// <inheritdoc />
@@ -141,7 +129,7 @@ namespace VRBuilder.Core
                     return;
                 }
 
-                if (Data.Current.FindPathInGraph(step => step.Data.Transitions.Data.Transitions.Select(transition => transition.Data.TargetStep), null, out IList<IStep> pathToChapterEnd) == false)
+                if (Data.Current.FindPathInGraph(step => step.Data.Transitions.Data.Transitions.Select(transition => transition.Data.TargetStepReference.Entity), null, out IList<IStep> pathToChapterEnd) == false)
                 {
                     throw new InvalidStateException("The end of the chapter is not reachable from the current step.");
                 }
@@ -155,7 +143,7 @@ namespace VRBuilder.Core
 
                     Data.Current.LifeCycle.MarkToFastForward();
 
-                    ITransition toAutocomplete = Data.Current.Data.Transitions.Data.Transitions.First(transition => transition.Data.TargetStep == step);
+                    ITransition toAutocomplete = FindTransitionTo(Data.Current, step);
                     if (toAutocomplete.IsCompleted == false)
                     {
                         toAutocomplete.Autocomplete();
@@ -166,11 +154,57 @@ namespace VRBuilder.Core
                     Data.Current = step;
                 }
             }
+
+            private static ITransition FindCompletedTransition(IStep step)
+            {
+                if (step == null)
+                {
+                    return null;
+                }
+
+                IEntity[] transitions = RuntimeEntityGraph.GetChildren(step.Data.Transitions.Data);
+                for (int i = 0; i < transitions.Length; i++)
+                {
+                    ITransition transition = (ITransition)transitions[i];
+                    if (transition.IsCompleted)
+                    {
+                        return transition;
+                    }
+                }
+
+                return null;
+            }
+
+            private static ITransition FindTransitionTo(IStep source, IStep target)
+            {
+                IEntity[] transitions = RuntimeEntityGraph.GetChildren(source.Data.Transitions.Data);
+                for (int i = 0; i < transitions.Length; i++)
+                {
+                    ITransition transition = (ITransition)transitions[i];
+                    if (transition.Data.TargetStepReference.Entity == target)
+                    {
+                        return transition;
+                    }
+                }
+
+                throw new InvalidOperationException("No transition to the requested step was found.");
+            }
         }
 
         /// <inheritdoc />
         [DataMember]
         public ChapterMetadata ChapterMetadata { get; set; }
+
+        /// <inheritdoc />
+        public override void RegenerateId()
+        {
+            base.RegenerateId();
+
+            if (ChapterMetadata != null)
+            {
+                ChapterMetadata.Guid = Id;
+            }
+        }
 
         /// <inheritdoc />
         public override IStageProcess GetActivatingProcess()
@@ -197,37 +231,6 @@ namespace VRBuilder.Core
         }
 
         /// <inheritdoc />
-        public IChapter Clone()
-        {
-            IChapter clonedChapter = new Chapter(Data.Name, null);
-            clonedChapter.ChapterMetadata.EntryNodePosition = ChapterMetadata.EntryNodePosition;
-
-            Dictionary<IStep, IStep> clonedSteps = new Dictionary<IStep, IStep>();
-
-            foreach (IStep step in Data.Steps)
-            {
-                IStep clonedStep = step.Clone();
-                clonedChapter.Data.Steps.Add(clonedStep);
-                if (Data.FirstStep == step)
-                {
-                    clonedChapter.Data.FirstStep = clonedStep;
-                }
-
-                clonedSteps.Add(step, clonedStep);
-            }
-
-            foreach (ITransition transition in clonedChapter.Data.Steps.SelectMany(step => step.Data.Transitions.Data.Transitions))
-            {
-                if (transition.Data.TargetStep != null && clonedSteps.ContainsKey(transition.Data.TargetStep))
-                {
-                    transition.Data.TargetStep = clonedSteps[transition.Data.TargetStep];
-                }
-            }
-
-            return clonedChapter;
-        }
-
-        /// <inheritdoc />
         IChapterData IDataOwner<IChapterData>.Data
         {
             get { return Data; }
@@ -240,7 +243,7 @@ namespace VRBuilder.Core
         public Chapter(string name, IStep firstStep)
         {
             ChapterMetadata = new ChapterMetadata();
-            ChapterMetadata.Guid = Guid.NewGuid();
+            ChapterMetadata.Guid = Id;
 
             Data.Name = name;
             Data.FirstStep = firstStep;
@@ -257,6 +260,21 @@ namespace VRBuilder.Core
                 {
                     Debug.LogFormat("<b>Chapter</b> <i>'{0}'</i> is <b>{1}</b>.\n", Data.Name, LifeCycle.Stage.ToString());
                 };
+            }
+        }
+
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext context)
+        {
+            ChapterMetadata = ChapterMetadata ?? new ChapterMetadata();
+
+            if (ChapterMetadata.Guid == Guid.Empty)
+            {
+                ChapterMetadata.Guid = Id;
+            }
+            else
+            {
+                SetId(ChapterMetadata.Guid);
             }
         }
     }

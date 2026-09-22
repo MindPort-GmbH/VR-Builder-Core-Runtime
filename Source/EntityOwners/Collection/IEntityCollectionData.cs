@@ -16,6 +16,9 @@ namespace VRBuilder.Core.EntityOwners
 
     /// <summary>
     /// An entity's data which represents a collection of other entities.
+    /// The complete, unfiltered topology may be modified until <see cref="ProcessRunner.ProcessEvents.ProcessSetup"/>
+    /// handlers complete. Child membership and ordering must remain stable while the process is running. Mode changes
+    /// may alter skip policy, lifecycle state, and parameters, but not topology.
     /// </summary>
     public interface IEntityCollectionData : IData
     {

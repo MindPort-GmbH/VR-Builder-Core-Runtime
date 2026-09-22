@@ -122,7 +122,16 @@ namespace VRBuilder.Core.SceneObjects
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Guids, AllowMultipleValues);
+            HashCode hashCode = new HashCode();
+            hashCode.Add(GetType());
+            hashCode.Add(AllowMultipleValues);
+
+            foreach (Guid guid in Guids.OrderBy(guid => guid))
+            {
+                hashCode.Add(guid);
+            }
+
+            return hashCode.ToHashCode();
         }
 
         public static bool operator ==(ProcessSceneReferenceBase left, ProcessSceneReferenceBase right)

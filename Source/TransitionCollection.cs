@@ -54,10 +54,24 @@ namespace VRBuilder.Core
             ///<inheritdoc />
             public override IEnumerator Update()
             {
-                while (Data.Transitions.All(transition => transition.IsCompleted == false))
+                while (HasCompletedTransition() == false)
                 {
                     yield return null;
                 }
+            }
+
+            private bool HasCompletedTransition()
+            {
+                IEntity[] transitions = RuntimeEntityGraph.GetChildren(Data);
+                for (int i = 0; i < transitions.Length; i++)
+                {
+                    if (((ITransition)transitions[i]).IsCompleted)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
 
             ///<inheritdoc />
@@ -112,12 +126,5 @@ namespace VRBuilder.Core
             return new ParallelAbortingProcess<EntityData>(Data);
         }
 
-        ///<inheritdoc />
-        public ITransitionCollection Clone()
-        {
-            TransitionCollection clonedTransitionCollection = new TransitionCollection();
-            clonedTransitionCollection.Data.Transitions = Data.Transitions.Select(transition => transition.Clone()).ToList();
-            return clonedTransitionCollection;
-        }
     }
 }

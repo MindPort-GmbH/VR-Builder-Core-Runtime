@@ -2,8 +2,6 @@
 // Licensed under the Apache License, Version 2.0
 // Modifications copyright (c) 2021-2026 MindPort GmbH
 
-using System.Collections.Generic;
-using System.Linq;
 using VRBuilder.Core.Behaviors;
 using VRBuilder.Core.Configuration.Modes;
 
@@ -16,24 +14,28 @@ namespace VRBuilder.Core.EntityOwners.ParallelEntityCollection
     internal abstract class Process<TData> : Core.StageProcess<TData> where TData : class, IEntityCollectionData, IModeData
     {
         /// <summary>
-        /// Takes a <paramref name="collection"/> of entities and filters out the ones that must be skipped due to <paramref name="mode"/>
-        /// or contains a <seealso cref="IBackgroundBehaviorData"/> with `IsBlocking` set to false.
+        /// Returns whether a blocking child is currently in the requested stage.
         /// </summary>
-        protected IEnumerable<IEntity> GetBlockingChildren(IEntityCollectionData collection, IMode mode)
+        protected bool HasBlockingChildInStage(Stage stage)
         {
-            return collection.GetChildren()
-                .Where(child => mode.CheckIfSkipped(child.GetType()) == false)
-                .Where(child =>
+            IEntity[] children = RuntimeEntityGraph.GetChildren(Data);
+            for (int i = 0; i < children.Length; i++)
+            {
+                IEntity child = children[i];
+                if (Data.Mode.CheckIfSkipped(child.GetType()) || child.LifeCycle.Stage != stage)
                 {
-                    IDataOwner dataOwner = child as IDataOwner;
-                    if (dataOwner == null)
-                    {
-                        return true;
-                    }
+                    continue;
+                }
 
-                    IBackgroundBehaviorData blockingData = dataOwner.Data as IBackgroundBehaviorData;
-                    return blockingData == null || blockingData.IsBlocking;
-                });
+                if (child is IDataOwner dataOwner && dataOwner.Data is IBackgroundBehaviorData blockingData && blockingData.IsBlocking == false)
+                {
+                    continue;
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         protected Process(TData data) : base(data)

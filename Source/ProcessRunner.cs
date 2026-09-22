@@ -25,7 +25,8 @@ namespace VRBuilder.Core
             public EventHandler<ProcessEventArgs> ProcessInitialized;
 
             /// <summary>
-            /// Will be called before the process is setup internally.
+            /// Will be called before the process is setup internally. Process topology may be modified by handlers;
+            /// child membership and ordering must remain stable after all handlers have completed.
             /// </summary>
             public EventHandler<ProcessEventArgs> ProcessSetup;
 
@@ -121,6 +122,8 @@ namespace VRBuilder.Core
             public void Execute()
             {
                 Events.ProcessSetup?.Invoke(this, new ProcessEventArgs(process));
+
+                RuntimeEntityGraph.Prepare(process);
 
                 RuntimeConfigurator.ModeChanged += HandleModeChanged;
 

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using VRBuilder.Core.Utils.Logging;
@@ -46,7 +47,7 @@ namespace VRBuilder.Core.Properties
         /// <inheritdoc/>
         public void SetValue(T value)
         {
-            if (storedValue == null && value == null || value.Equals(storedValue))
+            if (EqualityComparer<T>.Default.Equals(value, storedValue))
             {
                 return;
             }
