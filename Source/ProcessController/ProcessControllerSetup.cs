@@ -36,6 +36,14 @@ namespace VRBuilder.ProcessController
         /// </summary>
         protected static IProcessController enforcedProcessController = null;
 
+        // An enforced controller is a session override, not persisted scene configuration.
+        // Clear it before OnEnable chooses a controller, matching the behavior of a domain reload.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticState()
+        {
+            enforcedProcessController = null;
+        }
+
         protected virtual void OnEnable()
         {
             Setup();

@@ -14,6 +14,21 @@ namespace VRBuilder.Core.Utils
         private static ILogConsole console;
         private static Queue<Action> executionQueue = new Queue<Action>();
 
+        // Both the interface reference and queued work can retain the previous session's console.
+        // Reset before new scene components obtain a console or enqueue their first messages.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticState()
+        {
+            console = null;
+            // Keep the queue object: producers lock on this same instance when enqueuing.
+            // Replacing it would make concurrent producers and cleanup use different locks.
+            lock (executionQueue)
+            {
+                // Queued delegates can retain a console from the previous scene/session.
+                executionQueue.Clear();
+            }
+        }
+
         private static ILogConsole Console
         {
             get

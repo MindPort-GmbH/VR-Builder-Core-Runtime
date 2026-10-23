@@ -21,8 +21,6 @@ namespace VRBuilder.Unity
         /// </summary>
         private static T instance;
 
-        private static bool isApplicationQuitting = false;
-
         /// <summary>
         /// Public accessor for the singleton object.
         /// Will create a new instance if necessary.
@@ -31,8 +29,9 @@ namespace VRBuilder.Unity
         {
             get
             {
-                // if we are shutting down right now, do not create a new instance
-                if (isApplicationQuitting)
+                // Share shutdown state through a non-generic owner so one runtime hook can reset
+                // it for every singleton type. During shutdown, cleanup callers must not create objects.
+                if (UnitySingletonLifetime.IsApplicationQuitting)
                 {
                     return null;
                 }
@@ -77,12 +76,40 @@ namespace VRBuilder.Unity
 
         protected virtual void OnDestroy()
         {
-            // as soon as this singleton is about to be destroyed
-            // make sure that no instance is returned / created anymore
+            // Ordinary destruction must allow later recreation. Treating every destruction as
+            // application shutdown left coroutine dispatch permanently unavailable without a reload.
+            // Only release our own slot, since a replacement instance may already have been assigned.
             if (instance == this)
             {
-                isApplicationQuitting = true;
+                instance = null;
             }
+        }
+
+        protected virtual void OnApplicationQuit()
+        {
+            // Unity calls this for actual application/play-session shutdown, before destruction.
+            // Other components may still request the singleton while their own teardown is running.
+            UnitySingletonLifetime.IsApplicationQuitting = true;
+        }
+    }
+
+    /// <summary>
+    /// Tracks application shutdown across singleton types, resetting before each play session.
+    /// </summary>
+    /// <remarks>
+    /// Explicit session initialization also works in the older Unity versions supported by these
+    /// reusable packages; it does not require Unity 6.6 automatic static-cleanup attributes.
+    /// </remarks>
+    internal static class UnitySingletonLifetime
+    {
+        internal static bool IsApplicationQuitting { get; set; }
+
+        // Unity does not invoke runtime initialization methods declared on generic types.
+        // Run before scene initialization so a previous session's quit flag cannot block the first request.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticState()
+        {
+            IsApplicationQuitting = false;
         }
     }
 }
