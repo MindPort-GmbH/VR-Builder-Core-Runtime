@@ -13,16 +13,16 @@ namespace VRBuilder.ProcessController
     public class ProcessControllerSetup : MonoBehaviour
     {
 #pragma warning disable 0649
-        [SerializeField, SerializeReference]
+        [SerializeField]
         private string processControllerQualifiedName;
 
-        [SerializeField, SerializeReference]
+        [SerializeField]
         private bool autoStartProcess = true;
 
-        [SerializeField, SerializeReference]
+        [SerializeField]
         private bool useCustomPrefab;
 
-        [SerializeField, SerializeReference]
+        [SerializeField]
         private GameObject customPrefab;
 #pragma warning restore 0649
 
