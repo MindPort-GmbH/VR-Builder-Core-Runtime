@@ -81,6 +81,24 @@ namespace VRBuilder.Core
                 }
             }
 
+            private void OnDestroy()
+            {
+                // Exiting play mode or unloading a scene can interrupt an unfinished process.
+                // Do not rely on reaching Stage.Inactive: both publishers would otherwise retain
+                // this destroyed component and could call it when a later process changes mode.
+                RuntimeConfigurator.ModeChanged -= HandleModeChanged;
+                if (process != null)
+                {
+                    process.LifeCycle.StageChanged -= HandleProcessStageChanged;
+                }
+
+                // A replacement runner may already own the static slot when this one is destroyed.
+                if (instance == this)
+                {
+                    instance = null;
+                }
+            }
+
             private void Update()
             {
                 if (process == null)
@@ -141,6 +159,18 @@ namespace VRBuilder.Core
         private static ProcessRunnerInstance instance;
 
         private static ProcessEvents events;
+
+        // Managed events retain their subscribers when domain reload is disabled. Start with fresh
+        // publishers before scene components subscribe, rather than delivering events to old objects.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticState()
+        {
+            instance = null;
+            events = null;
+            // Events will register this callback lazily again; remove any surviving registration
+            // so it cannot clear a later session's event container or accumulate duplicate callbacks.
+            SceneManager.sceneUnloaded -= OnSceneUnloaded;
+        }
 
         /// <summary>
         /// Returns all process events for the current scene.

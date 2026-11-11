@@ -58,6 +58,21 @@ namespace VRBuilder.Core.Configuration
         private static RuntimeConfigurator instance;
         private static RuntimeConfigurator[] instances;
 
+        // Without domain reload, cached scene objects and their event listeners outlive the play session.
+        // Reset before scene Awake methods subscribe so the new session's listeners are not erased.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticState()
+        {
+            instance = null;
+            instances = null;
+            ModeChanged = null;
+            RuntimeConfigurationChanged = null;
+#if UNITY_EDITOR
+            // A pending registry refresh belongs to the previous scene's prefab-editing state.
+            hasDirtySceneObjects = false;
+#endif
+        }
+
 #if UNITY_EDITOR
         /// <summary>
         /// Flag to track if there are any dirty scene objects that need registry refresh.
@@ -276,6 +291,15 @@ namespace VRBuilder.Core.Configuration
 
         private void OnDestroy()
         {
+            // The managed configuration can survive its scene component through other references.
+            // Remove its forwarding callback as well as the component's static-event subscription;
+            // clearing the static publishers alone does not detach from the configuration's Modes object.
+            if (runtimeConfiguration != null)
+            {
+                runtimeConfiguration.Modes.ModeChanged -= RuntimeConfigurationModeChanged;
+            }
+
+            RuntimeConfigurationChanged -= HandleRuntimeConfigurationChanged;
             ModeChanged = null;
             RuntimeConfigurationChanged = null;
         }

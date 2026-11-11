@@ -13,16 +13,16 @@ namespace VRBuilder.ProcessController
     public class ProcessControllerSetup : MonoBehaviour
     {
 #pragma warning disable 0649
-        [SerializeField, SerializeReference]
+        [SerializeField]
         private string processControllerQualifiedName;
 
-        [SerializeField, SerializeReference]
+        [SerializeField]
         private bool autoStartProcess = true;
 
-        [SerializeField, SerializeReference]
+        [SerializeField]
         private bool useCustomPrefab;
 
-        [SerializeField, SerializeReference]
+        [SerializeField]
         private GameObject customPrefab;
 #pragma warning restore 0649
 
@@ -35,6 +35,14 @@ namespace VRBuilder.ProcessController
         /// Enforced process controller will be use.
         /// </summary>
         protected static IProcessController enforcedProcessController = null;
+
+        // An enforced controller is a session override, not persisted scene configuration.
+        // Clear it before OnEnable chooses a controller, matching the behavior of a domain reload.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticState()
+        {
+            enforcedProcessController = null;
+        }
 
         protected virtual void OnEnable()
         {
