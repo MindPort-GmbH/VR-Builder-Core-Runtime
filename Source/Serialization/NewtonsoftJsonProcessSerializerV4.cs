@@ -76,6 +76,7 @@ namespace VRBuilder.Core.Serialization
             }
             finally
             {
+                wrapper.RestoreTransitionTargets();
                 wrapper.RestoreSelectedSteps();
             }
 
@@ -131,6 +132,7 @@ namespace VRBuilder.Core.Serialization
             }
             finally
             {
+                wrapper.RestoreTransitionTargets();
                 wrapper.RestoreSelectedSteps();
             }
 
@@ -168,6 +170,7 @@ namespace VRBuilder.Core.Serialization
                         IStep targetStep = transition.Data.TargetStepReference.Entity;
                         if (targetStep != null)
                         {
+                            RememberTransitionTarget(transition);
                             transition.Data.TargetStepReference.Set(new StepRef() { StepMetadata = new StepMetadata() { Guid = targetStep.StepMetadata.Guid } });
                         }
                     }
@@ -208,7 +211,15 @@ namespace VRBuilder.Core.Serialization
                         }
 
                         Guid targetId = transition.Data.TargetStepReference.Id;
-                        transition.Data.TargetStepReference.Set(Steps.FirstOrDefault(candidate => candidate.Id == targetId));
+                        IStep target = Steps.FirstOrDefault(candidate => candidate.Id == targetId);
+                        if (target != null)
+                        {
+                            transition.Data.TargetStepReference.Set(target);
+                        }
+                        else
+                        {
+                            transition.Data.TargetStepReference.Set(targetId);
+                        }
                     }
                 }
 
@@ -268,6 +279,7 @@ namespace VRBuilder.Core.Serialization
                         IStep targetStep = transition.Data.TargetStepReference.Entity;
                         if (targetStep != null)
                         {
+                            RememberTransitionTarget(transition);
                             transition.Data.TargetStepReference.Set(new StepRef() { StepMetadata = new StepMetadata() { Guid = targetStep.StepMetadata.Guid } });
                         }
                     }
@@ -308,7 +320,15 @@ namespace VRBuilder.Core.Serialization
                         }
 
                         Guid targetId = transition.Data.TargetStepReference.Id;
-                        transition.Data.TargetStepReference.Set(Steps.FirstOrDefault(candidate => candidate.Id == targetId));
+                        IStep target = Steps.FirstOrDefault(candidate => candidate.Id == targetId);
+                        if (target != null)
+                        {
+                            transition.Data.TargetStepReference.Set(target);
+                        }
+                        else
+                        {
+                            transition.Data.TargetStepReference.Set(targetId);
+                        }
                     }
                 }
 
@@ -338,6 +358,26 @@ namespace VRBuilder.Core.Serialization
         {
             [JsonIgnore]
             private readonly Dictionary<IChapter, IStep> selectedSteps = new Dictionary<IChapter, IStep>();
+
+            [JsonIgnore]
+            private readonly Dictionary<ITransition, IStep> transitionTargets = new Dictionary<ITransition, IStep>();
+
+            protected void RememberTransitionTarget(ITransition transition)
+            {
+                if (!transitionTargets.ContainsKey(transition))
+                {
+                    transitionTargets.Add(transition, transition.Data.TargetStepReference.Entity);
+                }
+            }
+
+            public void RestoreTransitionTargets()
+            {
+                // A clipboard graph can point outside its owned steps; restore those original objects too.
+                foreach (KeyValuePair<ITransition, IStep> target in transitionTargets)
+                {
+                    target.Key.Data.TargetStepReference.Set(target.Value);
+                }
+            }
 
             protected void ClearLastSelectedStep(IChapter chapter)
             {
