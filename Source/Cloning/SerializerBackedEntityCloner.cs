@@ -84,13 +84,24 @@ namespace VRBuilder.Core.Cloning
             IReadOnlyCollection<EntityReference> sourceReferences = GetEntityReferences(sourceEntities);
             IReadOnlyDictionary<Guid, IEntity> objectReferenceTargetsBySourceId = IndexObjectReferenceTargets(sourceReferences);
 
-            byte[] serializedEntity = serializer.EntityToByteArray(source);
+            // Process and chapter serializers flatten step links before writing the graph.
+            byte[] serializedEntity = source switch
+            {
+                IProcess process => serializer.ProcessToByteArray(process),
+                IChapter chapter => serializer.ChapterToByteArray(chapter),
+                _ => serializer.EntityToByteArray(source)
+            };
             if (serializedEntity == null)
             {
                 throw new InvalidOperationException("The configured serializer returned no data while cloning an entity.");
             }
 
-            IEntity deserializedEntity = serializer.EntityFromByteArray(serializedEntity);
+            IEntity deserializedEntity = source switch
+            {
+                IProcess _ => serializer.ProcessFromByteArray(serializedEntity),
+                IChapter _ => serializer.ChapterFromByteArray(serializedEntity),
+                _ => serializer.EntityFromByteArray(serializedEntity)
+            };
 
             if (deserializedEntity is not TEntity copy)
             {
